@@ -9,7 +9,7 @@ namespace Hospital.ViewModels
 {
     public class ApplicationUserViewModel
     {
-        public List<ApplicationUser> Doctors { get; set; } = new List<ApplicationUser>();
+        
         public string Name { get; set; }
         public string Email { get; set; }
         public string UserName { get; set; }
@@ -46,5 +46,7 @@ namespace Hospital.ViewModels
                 Specialist = user.Specialist
             };
         }
+
+        public List<ApplicationUser> Doctors { get; set; } = new List<ApplicationUser>();
     }
 }
