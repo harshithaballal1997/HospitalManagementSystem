@@ -1,71 +1,96 @@
-﻿@model IEnumerable<Hospital.ViewModels.ApplicationUserViewModel>
+﻿@using Hospital.Utilities
+@model PagedResult<Hospital.ViewModels.ApplicationUserViewModel>
 
 @{
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Patient Management</h1>
+            <p class="text-muted small mb-0">Manage hospital patient records and registrations.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-medical btn-medical-create">
+            <i class="fas fa-plus"></i> Add New Patient
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UserName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.City)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Gender)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsDoctor)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Specialist)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UserName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.City)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Gender)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsDoctor)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Specialist)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="modern-card">
+        <div class="table-responsive">
+            <table class="table table-medical align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>City</th>
+                        <th>Gender</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Data)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-3 bg-primary bg-opacity-10 text-primary p-2 rounded-circle text-center" style="width: 35px; height: 35px; line-height: 18px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">@item.Name</div>
+                                        <div class="text-muted small">@item.UserName</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@item.Email</td>
+                            <td>@item.City</td>
+                            <td>
+                                <span class="badge @(item.Gender == Hospital.Models.Gender.Male ? "bg-info" : "bg-warning") bg-opacity-10 text-dark px-3 py-2">
+                                    @item.Gender
+                                </span>
+                            </td>
+                            <td>
+                                @if (item.IsDoctor)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">Doctor</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">Patient</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-edit">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-details">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-delete">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<cs-pager cs-paging-pagesize=(int)Model.PageSize
+          cs-paging-pagenumber=(int)Model.PageNumber
+          cs-paging-totalitems=(int)Model.TotalItems
+          cs-pagenumber-param="PageNumber"
+          asp-controller="Users"
+          asp-action="Index"
+          cs-pager-li-current-class="page-item active"
+          cs-pager-li-other-class="page-item"
+          cs-pager-li-non-active-class="page-item disabled"
+          cs-pager-link-current-class="page-link"
+          cs-pager-link-other-class="page-link">
+</cs-pager>

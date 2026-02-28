@@ -60,6 +60,31 @@ namespace Hospital.Repositories.Migrations
                     b.ToTable("Appointments");
                 });
 
+            modelBuilder.Entity("Hospital.Models.Bed", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BedNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsOccupied")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("Beds");
+                });
+
             modelBuilder.Entity("Hospital.Models.Bill", b =>
                 {
                     b.Property<int>("Id")
@@ -229,12 +254,14 @@ namespace Hospital.Repositories.Migrations
                     b.Property<int>("BloodPressure")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Height")
                         .HasColumnType("int");
 
                     b.Property<string>("LabNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PatientId")
                         .HasColumnType("nvarchar(450)");
@@ -243,21 +270,23 @@ namespace Hospital.Repositories.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TestCode")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TestResults")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TestType")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("TestValue")
+                        .HasColumnType("float");
 
                     b.Property<int>("Weight")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LabNumber");
 
                     b.HasIndex("PatientId");
 
@@ -440,6 +469,9 @@ namespace Hospital.Repositories.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RoomType")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -453,6 +485,49 @@ namespace Hospital.Repositories.Migrations
                     b.HasIndex("HospitalId");
 
                     b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("Hospital.Models.RoomAllocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AllocationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("BedId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HospitalId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDischarged")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PatientId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BedId");
+
+                    b.HasIndex("HospitalId");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("RoomAllocations");
                 });
 
             modelBuilder.Entity("Hospital.Models.Supplier", b =>
@@ -777,6 +852,17 @@ namespace Hospital.Repositories.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("Hospital.Models.Bed", b =>
+                {
+                    b.HasOne("Hospital.Models.Room", "Room")
+                        .WithMany("Beds")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+                });
+
             modelBuilder.Entity("Hospital.Models.Bill", b =>
                 {
                     b.HasOne("Hospital.Models.Insurance", "Insurance")
@@ -809,7 +895,8 @@ namespace Hospital.Repositories.Migrations
                 {
                     b.HasOne("Hospital.Models.ApplicationUser", "Patient")
                         .WithMany()
-                        .HasForeignKey("PatientId");
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Patient");
                 });
@@ -836,13 +923,13 @@ namespace Hospital.Repositories.Migrations
             modelBuilder.Entity("Hospital.Models.PatientReport", b =>
                 {
                     b.HasOne("Hospital.Models.ApplicationUser", "Doctor")
-                        .WithMany("PatientReports")
+                        .WithMany()
                         .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Hospital.Models.ApplicationUser", "Patient")
-                        .WithMany()
+                        .WithMany("PatientReports")
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -889,6 +976,40 @@ namespace Hospital.Repositories.Migrations
                         .IsRequired();
 
                     b.Navigation("Hospital");
+                });
+
+            modelBuilder.Entity("Hospital.Models.RoomAllocation", b =>
+                {
+                    b.HasOne("Hospital.Models.Bed", "Bed")
+                        .WithMany()
+                        .HasForeignKey("BedId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Hospital.Models.HospitalInfo", "Hospital")
+                        .WithMany()
+                        .HasForeignKey("HospitalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Hospital.Models.ApplicationUser", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Hospital.Models.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bed");
+
+                    b.Navigation("Hospital");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Hospital.Models.TestPrice", b =>
@@ -997,6 +1118,11 @@ namespace Hospital.Repositories.Migrations
             modelBuilder.Entity("Hospital.Models.PatientReport", b =>
                 {
                     b.Navigation("PrescribedMedicine");
+                });
+
+            modelBuilder.Entity("Hospital.Models.Room", b =>
+                {
+                    b.Navigation("Beds");
                 });
 
             modelBuilder.Entity("Hospital.Models.Supplier", b =>

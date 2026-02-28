@@ -1,0 +1,97 @@
+@model IEnumerable<Hospital.ViewModels.RoomAllocationViewModel>
+
+@{
+    ViewData["Title"] = "Room Allocations";
+}
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Room Allocations</h1>
+            <p class="text-muted small mb-0">Manage patient room assignments and discharge status.</p>
+        </div>
+        <a asp-action="Allocate" class="btn btn-medical btn-medical-create">
+            <i class="fas fa-plus"></i> Allocate New Room
+        </a>
+    </div>
+
+    <div class="modern-card">
+        <div class="table-responsive">
+            <table class="table table-medical align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Hospital</th>
+                        <th>Room #</th>
+                        <th>Bed #</th>
+                        <th>Status</th>
+                        <th>Allocation Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr class="@(item.IsDischarged ? "bg-light text-muted opacity-75" : "")">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-3 bg-primary bg-opacity-10 text-primary p-2 rounded-circle text-center" style="width: 35px; height: 35px; line-height: 18px;">
+                                        <i class="fas fa-user-injured"></i>
+                                    </div>
+                                    <div class="fw-bold">@item.PatientName</div>
+                                </div>
+                            </td>
+                            <td>@item.HospitalName</td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info px-2 py-1">@item.RoomNumber</span></td>
+                            <td>@(item.BedNumber ?? "N/A")</td>
+                            <td>
+                                @if (item.IsDischarged)
+                                {
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                                        <i class="fas fa-walking me-1"></i> Discharged
+                                    </span>
+                                }
+                                else if (item.Status == Hospital.Models.AllocationStatus.Reserved)
+                                {
+                                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
+                                        <i class="fas fa-calendar-check me-1"></i> Reserved
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                                        <i class="fas fa-bed me-1"></i> Occupied
+                                    </span>
+                                }
+                            </td>
+                            <td>@item.AllocationDate.ToShortDateString()</td>
+                            <td class="text-end">
+                                @if (!item.IsDischarged)
+                                {
+                                    <div class="d-flex justify-content-end gap-2">
+                                        @if (item.Status == Hospital.Models.AllocationStatus.Reserved)
+                                        {
+                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="status" value="@Hospital.Models.AllocationStatus.Occupied" />
+                                                <button type="submit" class="btn btn-medical-sm btn-medical-create">
+                                                    <i class="fas fa-door-open"></i> Enter
+                                                </button>
+                                            </form>
+                                        }
+                                        <form asp-action="Discharge" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-medical-sm btn-medical-delete" onclick="return confirm('Are you sure you want to discharge this patient?');">
+                                                <i class="fas fa-sign-out-alt"></i> Discharge
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

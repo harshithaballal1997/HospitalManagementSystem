@@ -1,0 +1,75 @@
+@model IEnumerable<Hospital.ViewModels.LabViewModel>
+
+<div class="card mt-4 shadow-sm border-0">
+    <div class="card-header bg-medical-light text-primary d-flex align-items-center">
+        <i class="fas fa-history me-2"></i>
+        <h6 class="mb-0 fw-bold">Previous Lab History</h6>
+    </div>
+    <div class="card-body p-0">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                    <thead class="bg-light small text-muted">
+                        <tr>
+                            <th class="ps-3 py-2">Date</th>
+                            <th class="py-2">Lab #</th>
+                            <th class="py-2">Test Type (Code)</th>
+                            <th class="py-2 text-center">Test Value</th>
+                            <th class="py-2 text-center">BMI</th>
+                            <th class="py-2 text-center">BP/Temp</th>
+                            <th class="py-2">Result Snippet</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3 py-2 text-muted">@item.CreatedAt.ToShortDateString()</td>
+                                <td class="py-2 fw-semibold">@item.LabNumber</td>
+                                <td class="py-2">
+                                    <span class="d-block">@item.TestType</span>
+                                    <span class="text-muted smaller">@item.TestCode</span>
+                                </td>
+                                <td class="py-2 text-center">
+                                    @if(item.TestValue.HasValue)
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">@item.TestValue.Value</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="py-2 text-center">
+                                    @{
+                                        double bmi = item.Height > 0 ? (item.Weight / Math.Pow(item.Height / 100.0, 2)) : 0;
+                                    }
+                                    <span class="badge @(bmi < 18.5 || bmi > 25 ? "bg-warning" : "bg-success") bg-opacity-10 text-dark">
+                                        @bmi.ToString("F1")
+                                    </span>
+                                </td>
+                                <td class="py-2 text-center">
+                                    <span class="badge bg-info bg-opacity-10 text-info">@item.BloodPressure</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning">@item.Temperature°C</span>
+                                </td>
+                                <td class="py-2">
+                                    <div class="text-truncate" style="max-width: 200px;" title="@item.TestResults">
+                                        @item.TestResults
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center p-4 text-muted">
+                <i class="fas fa-folder-open d-block mb-2 fs-4 opacity-50"></i>
+                <p class="mb-0">No previous lab history found for this patient.</p>
+            </div>
+        }
+    </div>
+</div>

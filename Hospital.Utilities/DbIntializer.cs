@@ -43,17 +43,100 @@ namespace Hospital.Utilities
                 _roleManager.CreateAsync(new IdentityRole(WebSiteRoles.WebSite_Admin)).GetAwaiter().GetResult();
                 _roleManager.CreateAsync(new IdentityRole(WebSiteRoles.WebSite_Patient)).GetAwaiter().GetResult();
                 _roleManager.CreateAsync(new IdentityRole(WebSiteRoles.WebSite_Doctor)).GetAwaiter().GetResult();
+            }
 
-                _userManager.CreateAsync(new ApplicationUser
+            // Seed Users
+            void SeedAdminUser(string email, string password)
+            {
+                var user = _userManager.FindByEmailAsync(email).GetAwaiter().GetResult();
+                if (user == null)
                 {
-                    UserName = "Harkesh",
-                    Email = "harkesh@xyz.com"
-                }, "Harkesh@123").GetAwaiter().GetResult();
+                    _userManager.CreateAsync(new ApplicationUser
+                    {
+                        UserName = email,
+                        Email = email,
+                        EmailConfirmed = true
+                    }, password).GetAwaiter().GetResult();
+                    user = _userManager.FindByEmailAsync(email).GetAwaiter().GetResult();
+                }
 
-                var Appuser = _context.ApplicationUsers.FirstOrDefault(x => x.Email == "harkesh@xyz.com");
-                if (Appuser != null)
+                if (user != null && !_userManager.IsInRoleAsync(user, WebSiteRoles.WebSite_Admin).GetAwaiter().GetResult())
                 {
-                    _userManager.AddToRoleAsync(Appuser, WebSiteRoles.WebSite_Admin).GetAwaiter().GetResult();
+                    _userManager.AddToRoleAsync(user, WebSiteRoles.WebSite_Admin).GetAwaiter().GetResult();
+                }
+            }
+
+            SeedAdminUser("harkesh@xyz.com", "Harkesh@123");
+            SeedAdminUser("harshitha.ballal1997@gmail.com", "Harshitha@97");
+            SeedAdminUser("admin@hospital.com", "Admin@123");
+
+            SeedRoomsAndBeds();
+        }
+
+        private void SeedRoomsAndBeds()
+        {
+            var hospitals = _context.HospitalInfos.ToList();
+            if (!hospitals.Any())
+            {
+                // Seed at least one hospital if none exists
+                var defaultHospital = new HospitalInfo
+                {
+                    Name = "Apollo Hospital",
+                    Type = "Multispecialty",
+                    City = "Bangalore",
+                    Pincode = "560001",
+                    Country = "India"
+                };
+                _context.HospitalInfos.Add(defaultHospital);
+                _context.SaveChanges();
+                hospitals.Add(defaultHospital);
+            }
+
+            foreach (var hospital in hospitals)
+            {
+                var existingRooms = _context.Rooms.Where(r => r.HospitalId == hospital.Id).ToList();
+
+                var requestedRooms = new List<(string Name, RoomType Type, int BedCount)>
+                {
+                    ("Cardiology", RoomType.General, 20),
+                    ("Edu", RoomType.General, 20),
+                    ("ICU", RoomType.General, 20),
+                    ("Medical-Surgical Units", RoomType.General, 20),
+                    ("OR", RoomType.General, 20),
+                    ("Labour/Delivery", RoomType.General, 20),
+                    ("Double Room 1", RoomType.Double, 2),
+                    ("Double Room 2", RoomType.Double, 2),
+                    ("Private Room 1", RoomType.Private, 1),
+                    ("Private Room 2", RoomType.Private, 1)
+                };
+
+                foreach (var roomDef in requestedRooms)
+                {
+                    if (!existingRooms.Any(r => r.RoomNumber == roomDef.Name))
+                    {
+                        var newRoom = new Room
+                        {
+                            RoomNumber = roomDef.Name,
+                            RoomType = roomDef.Type,
+                            Type = roomDef.Type.ToString(),
+                            Status = "Active",
+                            HospitalId = hospital.Id
+                        };
+                        _context.Rooms.Add(newRoom);
+                        _context.SaveChanges();
+
+                        // Seed Beds
+                        for (int i = 1; i <= roomDef.BedCount; i++)
+                        {
+                            _context.Beds.Add(new Bed
+                            {
+                                BedNumber = roomDef.Name + "-B" + i,
+                                RoomId = newRoom.Id,
+                                IsOccupied = false
+                            });
+                        }
+                        _context.SaveChanges();
+                    }
                 }
             }
         }

@@ -31,18 +31,69 @@ namespace Hospital.Repositories
         public DbSet<PatientReport> PatientReports { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<TestPrice> TestPrices { get; set; }
+        public DbSet<Bed> Beds { get; set; }
+        public DbSet<RoomAllocation> RoomAllocations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // This targets the relationship that creates the FK_PatientReport_AspNetUsers_PatientId
+            // RoomAllocation relationships
+            modelBuilder.Entity<RoomAllocation>()
+                .HasOne(ra => ra.Patient)
+                .WithMany()
+                .HasForeignKey(ra => ra.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RoomAllocation>()
+                .HasOne(ra => ra.Room)
+                .WithMany()
+                .HasForeignKey(ra => ra.RoomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RoomAllocation>()
+                .HasOne(ra => ra.Bed)
+                .WithMany()
+                .HasForeignKey(ra => ra.BedId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<RoomAllocation>()
+                .HasOne(ra => ra.Hospital)
+                .WithMany()
+                .HasForeignKey(ra => ra.HospitalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Bed relationships
+            modelBuilder.Entity<Bed>()
+                .HasOne(b => b.Room)
+                .WithMany(r => r.Beds)
+                .HasForeignKey(b => b.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // PatientReport relationships
             modelBuilder.Entity<PatientReport>()
-                // Assuming 'Patient' is the navigation property to the user
                 .HasOne(pr => pr.Patient)
-                .WithMany() // Adjust this if you have a collection on the User model
+                .WithMany(p => p.PatientReports)
                 .HasForeignKey(pr => pr.PatientId)
-                .OnDelete(DeleteBehavior.Restrict); // <--- THIS IS THE KEY CHANGE
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PatientReport>()
+                .HasOne(pr => pr.Doctor)
+                .WithMany()
+                .HasForeignKey(pr => pr.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PatientReport>()
+                .HasIndex(pr => pr.PatientId);
+
+            // Lab relationships
+            modelBuilder.Entity<Lab>()
+                .HasOne(l => l.Patient)
+                .WithMany()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Lab>()
+                .HasIndex(l => l.LabNumber);
 
             // Add other model configurations here...
         }

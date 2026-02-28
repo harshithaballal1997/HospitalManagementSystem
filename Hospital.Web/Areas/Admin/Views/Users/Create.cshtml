@@ -1,0 +1,96 @@
+@model Hospital.ViewModels.ApplicationUserViewModel
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Create New User</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Name" class="form-label"></label>
+                                <input asp-for="Name" class="form-control" placeholder="Full Name" />
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control" placeholder="email@example.com" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label"></label>
+                                <input asp-for="Password" class="form-control" type="password" placeholder="Min 6 characters" />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="City" class="form-label"></label>
+                                <input asp-for="City" class="form-control" placeholder="City Name" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Gender" class="form-label"></label>
+                                <select asp-for="Gender" class="form-select" asp-items="Html.GetEnumSelectList<Hospital.Models.Gender>()">
+                                    <option value="">-- Select Gender --</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <input asp-for="IsDoctor" class="form-check-input" id="IsDoctor" />
+                                    <label asp-for="IsDoctor" class="form-check-label">Is Doctor?</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="specialistContainer" style="display:none;">
+                            <label asp-for="Specialist" class="form-label"></label>
+                            <input asp-for="Specialist" class="form-control" placeholder="e.g. Cardiology" id="specialistInput" />
+                            <span asp-validation-for="Specialist" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary me-md-2">Back to List</a>
+                            <button type="submit" class="btn btn-success">Create User</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function () {
+            function toggleSpecialist() {
+                if ($('#IsDoctor').is(':checked')) {
+                    $('#specialistContainer').show();
+                } else {
+                    $('#specialistContainer').hide();
+                    $('#specialistInput').val('');
+                }
+            }
+
+            toggleSpecialist();
+            $('#IsDoctor').change(function () {
+                toggleSpecialist();
+            });
+        });
+    </script>
+}

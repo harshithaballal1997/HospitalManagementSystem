@@ -16,7 +16,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
     ));//b => b.MigrationsAssembly("Hospital.Web")
 
-builder.Services.AddIdentity<IdentityUser,IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = $"/Identity/Account/Login";
+    options.LogoutPath = $"/Identity/Account/Logout";
+    options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+});
 
 builder.Services.AddScoped<IDbIntializer, DbIntializer>();
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
@@ -26,6 +32,12 @@ builder.Services.AddTransient<IDoctorService, DoctorService>();
 builder.Services.AddTransient<IRoomService, RoomService>(); 
 builder.Services.AddTransient<IContactService, ContactService>();
 builder.Services.AddTransient<IApplicationUserService, ApplicationUserService>();
+builder.Services.AddTransient<ILabService, LabService>();
+builder.Services.AddTransient<IMedicalAssistantService, MedicalAssistantService>();
+builder.Services.AddTransient<ISafetyCheckerService, SafetyCheckerService>();
+builder.Services.AddTransient<IBedStatusHandler, BedStatusHandler>();
+builder.Services.AddTransient<IRoomAllocationService, RoomAllocationService>();
+builder.Services.AddTransient<IAIAllocationService, AIAllocationService>();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

@@ -1,0 +1,182 @@
+@model Hospital.ViewModels.LabViewModel
+
+@{
+    ViewData["Title"] = "Edit Lab Result & Vitals";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Edit Patient Lab Result & Vitals</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="PatientId" class="form-label">Patient</label>
+                                <select asp-for="PatientId" class="form-select" asp-items="ViewBag.PatientId" disabled>
+                                    <option value="">-- Select Patient --</option>
+                                </select>
+                                <input type="hidden" asp-for="PatientId" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LabNumber" class="form-label">Lab Number</label>
+                                <input asp-for="LabNumber" class="form-control" />
+                                <span asp-validation-for="LabNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label asp-for="Weight" class="form-label">Weight (kg)</label>
+                                <input asp-for="Weight" class="form-control" type="number" id="weight" oninput="calculateBMI()" />
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Height" class="form-label">Height (cm)</label>
+                                <input asp-for="Height" class="form-control" type="number" id="height" oninput="calculateBMI()" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estimated BMI</label>
+                                <div id="bmiDisplay" class="form-control">Calculating...</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="BloodPressure" class="form-label">Blood Pressure (mmHg)</label>
+                                <input asp-for="BloodPressure" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Temperature" class="form-label">Temperature (°C)</label>
+                                <input asp-for="Temperature" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="TestType" class="form-label">Test Type</label>
+                                <input asp-for="TestType" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="TestCode" class="form-label">Test Code</label>
+                                <input asp-for="TestCode" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="TestValue" class="form-label text-warning fw-bold">Estimated Test Value</label>
+                                <input asp-for="TestValue" class="form-control" placeholder="e.g. 5.5" type="number" step="0.01" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="TestResults" class="form-label">Test Results / Clinical Notes</label>
+                            <div class="input-group">
+                                <textarea asp-for="TestResults" class="form-control" rows="3" id="testResults"></textarea>
+                                <button class="btn btn-outline-warning" type="button" onclick="checkLabAI()">Check AI Safety & Auto-Summarize</button>
+                            </div>
+                            <div id="safetyResult" class="mt-2 small"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">Update Report</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Lab History Section -->
+    <div class="row justify-content-center mt-4 mb-5">
+        <div class="col-md-9">
+            <div id="patientHistoryContainer">
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                    <span class="ms-2">Loading historical data...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateBMI();
+            loadHistory();
+        });
+
+        function loadHistory() {
+            const patientId = document.getElementById('PatientId').value;
+            const container = document.getElementById('patientHistoryContainer');
+
+            if (!patientId) return;
+
+            fetch(`/Doctor/Labs/GetHistory?patientId=${patientId}`)
+                .then(response => response.text())
+                .then(html => {
+                    container.innerHTML = html;
+                })
+                .catch(err => console.error('Error fetching history:', err));
+        }
+
+        function calculateBMI() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const display = document.getElementById('bmiDisplay');
+
+            if (weight > 0 && height > 0) {
+                const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
+                display.innerText = bmi;
+                display.className = 'form-control ' + (bmi < 18.5 || bmi > 25 ? 'bg-danger text-white fw-bold' : 'bg-success text-white');
+            } else {
+                display.innerText = 'N/A';
+                display.className = 'form-control bg-light';
+            }
+        }
+
+        function checkLabAI() {
+            const patientId = document.getElementById('PatientId').value;
+            const resultDiv = document.getElementById('safetyResult');
+            const notesField = document.getElementById('testResults');
+
+            const labData = {
+                PatientId: patientId,
+                Weight: parseFloat(document.getElementById('weight').value) || 0,
+                Height: parseFloat(document.getElementById('height').value) || 0,
+                BloodPressure: document.getElementById('BloodPressure').value,
+                Temperature: parseFloat(document.getElementById('Temperature').value) || 0,
+                TestType: document.getElementById('TestType').value,
+                TestCode: document.getElementById('TestCode').value,
+                TestValue: parseFloat(document.getElementById('TestValue').value) || null,
+                TestResults: notesField.value
+            };
+
+            resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm text-warning" role="status"></div> AI is analyzing vitals and results...';
+
+            fetch('/Doctor/Labs/AnalyzeLab', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(labData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                notesField.value = data.message;
+                if (data.isSafe) {
+                    resultDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-double"></i> Analysis Complete. AI summary updated below.</span>';
+                } else {
+                    resultDiv.innerHTML = '<span class="text-warning fw-bold"><i class="fas fa-exclamation-circle"></i> AI Alert: Potential abnormalities detected.</span>';
+                }
+            })
+            .catch(err => {
+                resultDiv.innerHTML = '<span class="text-danger">Error during AI analysis.</span>';
+                console.error(err);
+            });
+        }
+    </script>
+}

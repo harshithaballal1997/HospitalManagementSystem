@@ -1,10 +1,13 @@
 ﻿using Hospital.Services;
 using Hospital.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Hospital.Utilities;
 
 namespace Hospital.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = WebSiteRoles.WebSite_Admin)]
     public class RoomsController : Controller
     {
         private IRoomService _roomService;

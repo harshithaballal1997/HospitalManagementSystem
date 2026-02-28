@@ -1,0 +1,150 @@
+@model Hospital.ViewModels.RoomAllocationViewModel
+@using Hospital.Models
+
+@{
+    ViewData["Title"] = "Allocate Room";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">New Room Allocation</h4>
+                    <button type="button" id="btnAI" class="btn btn-light btn-sm">
+                        <i class="bi bi-robot"></i> AI Suggestion
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Allocate" id="allocationForm">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Hospital</label>
+                                <select asp-for="HospitalId" class="form-select" id="hospitalSelect" asp-items="ViewBag.Hospitals">
+                                    <option value="">-- Select Hospital --</option>
+                                </select>
+                                <span asp-validation-for="HospitalId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Patient</label>
+                                <select asp-for="PatientId" class="form-select" asp-items="ViewBag.Patients">
+                                    <option value="">-- Select Patient --</option>
+                                </select>
+                                <span asp-validation-for="PatientId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Room Type</label>
+                                <select id="typeSelect" class="form-select" asp-items="Html.GetEnumSelectList<RoomType>()">
+                                    <option value="">-- Select Type --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Room</label>
+                                <select asp-for="RoomId" class="form-select" id="roomSelect" disabled>
+                                    <option value="">-- Select Room --</option>
+                                </select>
+                                <span asp-validation-for="RoomId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Bed</label>
+                                <select asp-for="BedId" class="form-select" id="bedSelect" disabled>
+                                    <option value="">-- Select Bed --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label d-block">Allotment Status</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="Status" id="statusReserved" value="Reserved" checked autocomplete="off">
+                                <label class="btn btn-outline-warning" for="statusReserved">Reserved (Not Yet Entered)</label>
+
+                                <input type="radio" class="btn-check" name="Status" id="statusOccupied" value="Occupied" autocomplete="off">
+                                <label class="btn btn-outline-success" for="statusOccupied">Occupied (Patient Entered)</label>
+                            </div>
+                        </div>
+
+                        <div id="aiAlert" class="alert alert-info d-none">
+                            <i class="bi bi-info-circle"></i> <span id="aiMessage"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Complete Allocation</button>
+                            <a asp-action="Index" class="btn btn-link">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            function loadRooms() {
+                var hospitalId = $('#hospitalSelect').val();
+                var type = $('#typeSelect').val();
+                
+                if (hospitalId && type !== "") {
+                    $.get('/Admin/RoomAllocation/GetRooms', { hospitalId: hospitalId, type: type }, function (data) {
+                        $('#roomSelect').empty().append('<option value="">-- Select Room --</option>').prop('disabled', false);
+                        $.each(data, function (i, item) {
+                            $('#roomSelect').append($('<option>', { value: item.id, text: 'Room ' + item.roomNumber }));
+                        });
+                        $('#bedSelect').empty().append('<option value="">-- Select Bed --</option>').prop('disabled', true);
+                    });
+                } else {
+                    $('#roomSelect').empty().append('<option value="">-- Select Room --</option>').prop('disabled', true);
+                    $('#bedSelect').empty().append('<option value="">-- Select Bed --</option>').prop('disabled', true);
+                }
+            }
+
+            $('#hospitalSelect, #typeSelect').change(loadRooms);
+
+            $('#roomSelect').change(function () {
+                var roomId = $(this).val();
+                if (roomId) {
+                    $.get('/Admin/RoomAllocation/GetBeds', { roomId: roomId }, function (data) {
+                        $('#bedSelect').empty().append('<option value="">-- Select Bed --</option>').prop('disabled', false);
+                        $.each(data, function (i, item) {
+                            $('#bedSelect').append($('<option>', { value: item.id, text: 'Bed ' + item.bedNumber }));
+                        });
+                    });
+                } else {
+                    $('#bedSelect').empty().append('<option value="">-- Select Bed --</option>').prop('disabled', true);
+                }
+            });
+
+            $('#btnAI').click(function () {
+                var hospitalId = $('#hospitalSelect').val();
+                var type = $('#typeSelect').val();
+
+                if (!hospitalId || type === "") {
+                    alert("Please select Hospital and Room Type first.");
+                    return;
+                }
+
+                $.get('/Admin/RoomAllocation/SuggestOptimal', { hospitalId: hospitalId, type: type }, function (res) {
+                    if (res.success) {
+                        $('#roomSelect').empty().append($('<option>', { value: res.data.roomId, text: 'Room ' + res.data.roomNumber })).prop('disabled', false);
+                        $('#roomSelect').val(res.data.roomId);
+                        
+                        $('#bedSelect').empty().append($('<option>', { value: res.data.bedId, text: 'Bed ' + res.data.bedNumber })).prop('disabled', false);
+                        $('#bedSelect').val(res.data.bedId);
+
+                        $('#aiAlert').removeClass('d-none').addClass('show');
+                        $('#aiMessage').text("AI suggested optimal placement: Room " + res.data.roomNumber + ", Bed " + res.data.bedNumber);
+                    } else {
+                        alert(res.message);
+                    }
+                });
+            });
+        });
+    </script>
+}

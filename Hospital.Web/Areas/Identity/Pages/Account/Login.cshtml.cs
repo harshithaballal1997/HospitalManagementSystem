@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Hospital.Utilities;
 
 namespace Hospital.Web.Areas.Identity.Pages.Account
 {
@@ -115,6 +116,14 @@ namespace Hospital.Web.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+                    if (returnUrl == null || returnUrl == Url.Content("~/"))
+                    {
+                        var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+                        if (user != null && await _signInManager.UserManager.IsInRoleAsync(user, WebSiteRoles.WebSite_Admin))
+                        {
+                            return LocalRedirect("~/Admin/Dashboard");
+                        }
+                    }
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)

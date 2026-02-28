@@ -1,3 +1,26 @@
+:root {
+  --medical-primary: #0056b3;
+  --medical-secondary: #007bff;
+  --medical-accent: #17a2b8;
+  --medical-light: #f0f7ff;
+  --medical-white: #ffffff;
+  --medical-gray-100: #f8f9fa;
+  --medical-gray-200: #e9ecef;
+  --medical-text: #2d3748;
+  --medical-danger: #e53e3e;
+  --medical-success: #38a169;
+  --medical-warning: #d69e2e;
+  --medical-indigo: #667eea;
+}
+
+.bg-medical-light {
+  background-color: var(--medical-light) !important;
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
 html {
   font-size: 14px;
 }
@@ -8,15 +31,130 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+body {
+  margin-bottom: 60px;
+  background-color: var(--medical-gray-100);
+  color: var(--medical-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Table Enhancements */
+.table-medical {
+  background: var(--medical-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.table-medical thead {
+  background-color: var(--medical-primary);
+  color: white;
+}
+
+.table-medical th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 1rem;
+  border: none;
+}
+
+.table-medical td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--medical-gray-200);
+}
+
+.table-medical tbody tr:hover {
+  background-color: var(--medical-light);
+  cursor: default;
+}
+
+/* Button Enhancements */
+.btn-medical {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-medical-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-medical-edit {
+  background-color: var(--medical-indigo);
+  color: white;
+  border: none;
+}
+
+.btn-medical-edit:hover {
+  background-color: #5a67d8;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-medical-details {
+  background-color: var(--medical-secondary);
+  color: white;
+  border: none;
+}
+
+.btn-medical-details:hover {
+  background-color: #0069d9;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-medical-delete {
+  background-color: var(--medical-danger);
+  color: white;
+  border: none;
+}
+
+.btn-medical-delete:hover {
+  background-color: #c53030;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-medical-create {
+  background-color: var(--medical-success);
+  color: white;
+  border: none;
+}
+
+.btn-medical-create:hover {
+  background-color: #2f855a;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Card layout */
+.modern-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--medical-gray-200);
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--medical-secondary);
 }
 
 html {
   position: relative;
   min-height: 100%;
-}
-
-body {
-  margin-bottom: 60px;
 }

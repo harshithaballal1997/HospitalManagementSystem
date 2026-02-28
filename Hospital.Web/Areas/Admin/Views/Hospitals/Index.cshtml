@@ -5,65 +5,61 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Hospital Management</h1>
+            <p class="text-muted small mb-0">Manage hospital facilities and contact information.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-medical btn-medical-create">
+            <i class="fas fa-plus"></i> Add New Hospital
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Id
-            </th>
-            <th>
-                Name
-            </th>
-            <th>
-                Type
-            </th>
-            <th>
-                City
-            </th>
-            <th>
-                PinCode
-            </th>
-            <th>
-                Country
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model.Data) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Id)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Type)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.City)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Pincode)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Country)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
-                @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-                @Html.ActionLink("Delete", "Delete", new { id=item.Id })
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="modern-card">
+        <div class="table-responsive">
+            <table class="table table-medical align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>City</th>
+                        <th>PinCode</th>
+                        <th>Country</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Data)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td><span class="fw-bold text-primary">@item.Name</span></td>
+                            <td>@item.Type</td>
+                            <td>@item.City</td>
+                            <td>@item.Pincode</td>
+                            <td>@item.Country</td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-edit">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-details">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-medical-sm btn-medical-delete">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <cs-pager cs-paging-pagesize=(int)Model.PageSize
           cs-paging-pagenumber=(int)Model.PageNumber

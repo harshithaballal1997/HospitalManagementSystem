@@ -10,6 +10,7 @@ namespace Hospital.Models
     {
         public int Id { get; set; }
         public string PatientId { get; set; }
+        public string DoctorId { get; set; }
         public string Diagnose { get; set; }   
         public string MedicineName { get; set; }
         public ApplicationUser Doctor { get; set; }

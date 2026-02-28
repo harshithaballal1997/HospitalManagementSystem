@@ -1,0 +1,125 @@
+@model Hospital.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- KPI Cards -->
+        <div class="col-xl-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 bg-primary text-white">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h6 class="text-uppercase mb-1">Total Hospitals</h6>
+                            <h2 class="font-weight-bold mb-0">@Model.TotalHospitals</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hospital fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 bg-success text-white">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h6 class="text-uppercase mb-1">Total Patients</h6>
+                            <h2 class="font-weight-bold mb-0">@Model.TotalPatients</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-injured fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 bg-info text-white">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h6 class="text-uppercase mb-1">Total Doctors</h6>
+                            <h2 class="font-weight-bold mb-0">@Model.TotalDoctors</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-md fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 font-weight-bold">Hospital Room Availability</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="availabilityChart" style="min-height: 350px; height: 350px; max-height: 350px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('availabilityChart').getContext('2d');
+            
+            const labels = @Html.Raw(Json.Serialize(Model.HospitalAvailability.Select(x => x.HospitalName)));
+            const availableData = @Html.Raw(Json.Serialize(Model.HospitalAvailability.Select(x => x.AvailableBeds)));
+            const occupiedData = @Html.Raw(Json.Serialize(Model.HospitalAvailability.Select(x => x.OccupiedBeds)));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Available Beds',
+                            data: availableData,
+                            backgroundColor: '#28a745',
+                            borderColor: '#28a745',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Occupied Beds',
+                            data: occupiedData,
+                            backgroundColor: '#dc3545',
+                            borderColor: '#dc3545',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
