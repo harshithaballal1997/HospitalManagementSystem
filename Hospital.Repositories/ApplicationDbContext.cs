@@ -91,11 +91,14 @@ namespace Hospital.Repositories
                 .HasOne(l => l.Patient)
                 .WithMany()
                 .OnDelete(DeleteBehavior.Restrict);
-
+            
             modelBuilder.Entity<Lab>()
                 .HasIndex(l => l.LabNumber);
 
             // Add other model configurations here...
+            modelBuilder.Entity<Medicine>()
+                .Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
         }
 
     }
