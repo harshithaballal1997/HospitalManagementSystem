@@ -1,5 +1,6 @@
 using Hospital.Models;
 using Hospital.Repositories.Interfaces;
+using Hospital.Utilities;
 using Hospital.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -61,6 +62,25 @@ namespace Hospital.Services
         {
             var allocations = _unitOfWork.GenericRepository<RoomAllocation>().GetAll(includeProperties: "Room,Bed,Patient,Hospital");
             return allocations.Select(x => new RoomAllocationViewModel(x)).ToList();
+        }
+
+        public PagedResult<RoomAllocationViewModel> GetAll(int pageNumber, int pageSize)
+        {
+            int ExcludeRecords = (pageSize * pageNumber) - pageSize;
+            var modelList = _unitOfWork.GenericRepository<RoomAllocation>().GetAll(includeProperties: "Room,Bed,Patient,Hospital")
+                .Skip(ExcludeRecords).Take(pageSize).ToList();
+            var totalCount = _unitOfWork.GenericRepository<RoomAllocation>().GetAll().Count();
+
+            var vmList = modelList.Select(x => new RoomAllocationViewModel(x)).ToList();
+
+            var result = new PagedResult<RoomAllocationViewModel>
+            {
+                Data = vmList,
+                TotalItems = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            return result;
         }
 
         public IEnumerable<RoomViewModel> GetAvailableRooms(int hospitalId, RoomType type)

@@ -4,16 +4,19 @@ using Hospital.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Hospital.Web.Migrations
+namespace Hospital.Repositories.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303211256_AddHospitalExtendedFields")]
+    partial class AddHospitalExtendedFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,6 +61,31 @@ namespace Hospital.Web.Migrations
                     b.HasIndex("PatientId");
 
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("Hospital.Models.Bed", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BedNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsOccupied")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("Beds");
                 });
 
             modelBuilder.Entity("Hospital.Models.Bill", b =>
@@ -176,16 +204,37 @@ namespace Hospital.Web.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("EmailAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OperatingHours")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Pincode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RegistrationNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StreetAddress")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Type")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WebsiteUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -229,12 +278,14 @@ namespace Hospital.Web.Migrations
                     b.Property<int>("BloodPressure")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Height")
                         .HasColumnType("int");
 
                     b.Property<string>("LabNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PatientId")
                         .HasColumnType("nvarchar(450)");
@@ -243,21 +294,23 @@ namespace Hospital.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TestCode")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TestResults")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TestType")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("TestValue")
+                        .HasColumnType("float");
 
                     b.Property<int>("Weight")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LabNumber");
 
                     b.HasIndex("PatientId");
 
@@ -362,7 +415,7 @@ namespace Hospital.Web.Migrations
 
                     b.HasIndex("PatientId");
 
-                    b.ToTable("PatientReport");
+                    b.ToTable("PatientReports");
                 });
 
             modelBuilder.Entity("Hospital.Models.Payroll", b =>
@@ -440,6 +493,9 @@ namespace Hospital.Web.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RoomType")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -453,6 +509,49 @@ namespace Hospital.Web.Migrations
                     b.HasIndex("HospitalId");
 
                     b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("Hospital.Models.RoomAllocation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AllocationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("BedId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HospitalId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDischarged")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PatientId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BedId");
+
+                    b.HasIndex("HospitalId");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("RoomAllocations");
                 });
 
             modelBuilder.Entity("Hospital.Models.Supplier", b =>
@@ -732,17 +831,24 @@ namespace Hospital.Web.Migrations
                     b.Property<DateTime>("DOB")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<int>("Gender")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsDoctor")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nationality")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PictureUri")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -768,6 +874,17 @@ namespace Hospital.Web.Migrations
                     b.Navigation("Doctor");
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("Hospital.Models.Bed", b =>
+                {
+                    b.HasOne("Hospital.Models.Room", "Room")
+                        .WithMany("Beds")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Hospital.Models.Bill", b =>
@@ -802,7 +919,8 @@ namespace Hospital.Web.Migrations
                 {
                     b.HasOne("Hospital.Models.ApplicationUser", "Patient")
                         .WithMany()
-                        .HasForeignKey("PatientId");
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Patient");
                 });
@@ -831,13 +949,13 @@ namespace Hospital.Web.Migrations
                     b.HasOne("Hospital.Models.ApplicationUser", "Doctor")
                         .WithMany()
                         .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Hospital.Models.ApplicationUser", "Patient")
-                        .WithMany()
+                        .WithMany("PatientReports")
                         .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Doctor");
@@ -848,7 +966,7 @@ namespace Hospital.Web.Migrations
             modelBuilder.Entity("Hospital.Models.Payroll", b =>
                 {
                     b.HasOne("Hospital.Models.ApplicationUser", "EmployeeId")
-                        .WithMany("Payrolls")
+                        .WithMany()
                         .HasForeignKey("EmployeeIdId");
 
                     b.Navigation("EmployeeId");
@@ -882,6 +1000,40 @@ namespace Hospital.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Hospital");
+                });
+
+            modelBuilder.Entity("Hospital.Models.RoomAllocation", b =>
+                {
+                    b.HasOne("Hospital.Models.Bed", "Bed")
+                        .WithMany()
+                        .HasForeignKey("BedId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Hospital.Models.HospitalInfo", "Hospital")
+                        .WithMany()
+                        .HasForeignKey("HospitalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Hospital.Models.ApplicationUser", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Hospital.Models.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bed");
+
+                    b.Navigation("Hospital");
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Hospital.Models.TestPrice", b =>
@@ -958,9 +1110,7 @@ namespace Hospital.Web.Migrations
                 {
                     b.HasOne("Hospital.Models.Department", "Department")
                         .WithMany("Employees")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DepartmentId");
 
                     b.Navigation("Department");
                 });
@@ -994,6 +1144,11 @@ namespace Hospital.Web.Migrations
                     b.Navigation("PrescribedMedicine");
                 });
 
+            modelBuilder.Entity("Hospital.Models.Room", b =>
+                {
+                    b.Navigation("Beds");
+                });
+
             modelBuilder.Entity("Hospital.Models.Supplier", b =>
                 {
                     b.Navigation("MedicineReport");
@@ -1001,7 +1156,7 @@ namespace Hospital.Web.Migrations
 
             modelBuilder.Entity("Hospital.Models.ApplicationUser", b =>
                 {
-                    b.Navigation("Payrolls");
+                    b.Navigation("PatientReports");
                 });
 #pragma warning restore 612, 618
         }

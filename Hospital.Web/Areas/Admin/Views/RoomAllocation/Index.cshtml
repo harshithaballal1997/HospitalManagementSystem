@@ -1,4 +1,5 @@
-@model IEnumerable<Hospital.ViewModels.RoomAllocationViewModel>
+@using Hospital.Utilities
+@model PagedResult<Hospital.ViewModels.RoomAllocationViewModel>
 
 @{
     ViewData["Title"] = "Room Allocations";
@@ -30,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Data)
                     {
                         <tr class="@(item.IsDischarged ? "bg-light text-muted opacity-75" : "")">
                             <td>
@@ -94,4 +95,17 @@
             </table>
         </div>
     </div>
+
+    <cs-pager cs-paging-pagesize=(int)Model.PageSize
+              cs-paging-pagenumber=(int)Model.PageNumber
+              cs-paging-totalitems=(int)Model.TotalItems
+              cs-pagenumber-param="pageNumber"
+              asp-controller="RoomAllocation"
+              asp-action="Index"
+              cs-pager-li-current-class="page-item active"
+              cs-pager-li-other-class="page-item"
+              cs-pager-li-non-active-class="page-item disabled"
+              cs-pager-link-current-class="page-link"
+              cs-pager-link-other-class="page-link">
+    </cs-pager>
 </div>

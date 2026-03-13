@@ -18,6 +18,8 @@ namespace Hospital.Models
     {
         General,
         Double,
-        Private
+        Private,
+        ICU,
+        Ward
     }
 }

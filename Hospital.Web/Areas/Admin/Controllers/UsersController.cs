@@ -21,6 +21,12 @@ namespace Hospital.Web.Areas.Admin.Controllers
             return View(_userService.GetAll(PageNumber,PageSize));
         }
 
+        public IActionResult Details(string id)
+        {
+            var viewModel = _userService.GetUserById(id);
+            return View(viewModel);
+        }
+
         [HttpGet]
         public IActionResult Create()
         {

@@ -1,55 +1,259 @@
 ﻿@model Hospital.ViewModels.HospitalInfoViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit Hospital";
 }
 
-<h1>Edit</h1>
-
-<h4>HospitalInfoViewModel</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Id" class="control-label"></label>
-                <input asp-for="Id" class="form-control" />
-                <span asp-validation-for="Id" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Type" class="control-label"></label>
-                <input asp-for="Type" class="form-control" />
-                <span asp-validation-for="Type" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="City" class="control-label"></label>
-                <input asp-for="City" class="form-control" />
-                <span asp-validation-for="City" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Pincode" class="control-label"></label>
-                <input asp-for="Pincode" class="form-control" />
-                <span asp-validation-for="Pincode" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Country" class="control-label"></label>
-                <input asp-for="Country" class="form-control" />
-                <span asp-validation-for="Country" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+<div class="container-fluid px-4 py-3">
+    <div class="mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Edit Hospital</h1>
+        <p class="text-muted small mb-0">Update hospital information below.</p>
     </div>
+
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input asp-for="Id" type="hidden" />
+
+        <div class="row g-4">
+            <!-- Basic Information Card -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="card shadow mb-4 border-0">
+                    <div class="card-header py-3 bg-primary text-white">
+                        <h6 class="m-0 font-weight-bold"><i class="fas fa-hospital me-2"></i>Basic Information</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="Name" class="form-label fw-bold small text-uppercase text-muted">Hospital Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-building text-primary"></i></span>
+                                    <input asp-for="Name" class="form-control border-start-0" placeholder="Enter hospital name" />
+                                </div>
+                                <span asp-validation-for="Name" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Type" class="form-label fw-bold small text-uppercase text-muted">Hospital Type</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-list-alt text-primary"></i></span>
+                                    <select asp-for="Type" id="hospitalType" class="form-select border-start-0">
+                                        <option value="">-- Select Type --</option>
+                                        <option value="General">General</option>
+                                        <option value="Specialty">Specialty</option>
+                                        <option value="Teaching">Teaching</option>
+                                        <option value="Rehabilitation">Rehabilitation</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="Type" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="RegistrationNumber" class="form-label fw-bold small text-uppercase text-muted">Registration Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-id-card text-primary"></i></span>
+                                    <input asp-for="RegistrationNumber" class="form-control border-start-0" placeholder="e.g., REG-123456" />
+                                </div>
+                                <span asp-validation-for="RegistrationNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12" id="servicesSection" style="display:none;">
+                                <label asp-for="Services" class="form-label fw-bold small text-uppercase text-muted">Services Offered</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-stethoscope text-primary"></i></span>
+                                    <select asp-for="Services" id="servicesDropdown" class="form-select border-start-0">
+                                        <option value="">-- Select Services --</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="Services" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="OperatingHours" class="form-label fw-bold small text-uppercase text-muted">Operating Hours</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-clock text-primary"></i></span>
+                                    <input asp-for="OperatingHours" class="form-control border-start-0" placeholder="e.g., Mon-Fri: 8AM-8PM, Sat-Sun: 9AM-5PM" />
+                                </div>
+                                <span asp-validation-for="OperatingHours" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branding Card -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="card shadow mb-4 border-0">
+                    <div class="card-header py-3 bg-info text-white">
+                        <h6 class="m-0 font-weight-bold"><i class="fas fa-image me-2"></i>Branding</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="LogoFile" class="form-label fw-bold small text-uppercase text-muted">Hospital Logo</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-upload text-info"></i></span>
+                                    <input asp-for="LogoFile" type="file" class="form-control border-start-0" accept="image/*" />
+                                </div>
+                                <div class="form-text text-muted small">Upload a new logo to replace the current one (JPG, PNG recommended)</div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model?.LogoUrl))
+                            {
+                                <div class="col-md-12">
+                                    <div class="mt-2">
+                                        <img src="@Model.LogoUrl" alt="Current Logo" class="img-thumbnail" style="max-height: 100px;" />
+                                        <p class="text-muted small mt-1">Current logo</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information Card -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="card shadow mb-4 border-0">
+                    <div class="card-header py-3 bg-success text-white">
+                        <h6 class="m-0 font-weight-bold"><i class="fas fa-address-book me-2"></i>Contact Information</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label fw-bold small text-uppercase text-muted">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-phone text-success"></i></span>
+                                    <input asp-for="PhoneNumber" class="form-control border-start-0" placeholder="+1 (555) 123-4567" />
+                                </div>
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="EmailAddress" class="form-label fw-bold small text-uppercase text-muted">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-success"></i></span>
+                                    <input asp-for="EmailAddress" type="email" class="form-control border-start-0" placeholder="hospital@example.com" />
+                                </div>
+                                <span asp-validation-for="EmailAddress" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="WebsiteUrl" class="form-label fw-bold small text-uppercase text-muted">Website URL</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-globe text-success"></i></span>
+                                    <input asp-for="WebsiteUrl" type="url" class="form-control border-start-0" placeholder="https://www.hospital.com" />
+                                </div>
+                                <span asp-validation-for="WebsiteUrl" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Card -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="card shadow mb-4 border-0">
+                    <div class="card-header py-3 bg-warning text-dark">
+                        <h6 class="m-0 font-weight-bold"><i class="fas fa-map-marker-alt me-2"></i>Location</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="StreetAddress" class="form-label fw-bold small text-uppercase text-muted">Full Street Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-road text-warning"></i></span>
+                                    <textarea asp-for="StreetAddress" class="form-control border-start-0" rows="3" placeholder="123 Main Street, Suite 100"></textarea>
+                                </div>
+                                <span asp-validation-for="StreetAddress" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label fw-bold small text-uppercase text-muted">City</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-city text-warning"></i></span>
+                                    <input asp-for="City" class="form-control border-start-0" placeholder="City name" />
+                                </div>
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="Country" class="form-label fw-bold small text-uppercase text-muted">Country</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-flag text-warning"></i></span>
+                                    <input asp-for="Country" class="form-control border-start-0" placeholder="Country" />
+                                </div>
+                                <span asp-validation-for="Country" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="Pincode" class="form-label fw-bold small text-uppercase text-muted">Pincode / ZIP</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-map-pin text-warning"></i></span>
+                                    <input asp-for="Pincode" class="form-control border-start-0" placeholder="123456" />
+                                </div>
+                                <span asp-validation-for="Pincode" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light px-4">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const serviceOptions = {
+            'General': ['Emergencies', 'Common surgeries'],
+            'Specialty': ['Cancer treatment', 'Pediatrics', 'Mental health'],
+            'Teaching': ['Disease research', 'New treatment trials'],
+            'Rehabilitation': ['Recovery programs', 'Long-term physical therapy']
+        };
 
+        const currentServices = '@(Model?.Services ?? "")';
+
+        function updateServices(selectedType) {
+            const section = document.getElementById('servicesSection');
+            const dropdown = document.getElementById('servicesDropdown');
+            dropdown.innerHTML = '<option value="">-- Select Services --</option>';
+
+            if (selectedType && serviceOptions[selectedType]) {
+                serviceOptions[selectedType].forEach(function (opt) {
+                    const o = document.createElement('option');
+                    o.value = opt;
+                    o.text = opt;
+                    if (opt === currentServices) o.selected = true;
+                    dropdown.appendChild(o);
+                });
+                section.style.display = '';
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        document.getElementById('hospitalType').addEventListener('change', function () {
+            updateServices(this.value);
+        });
+
+        // On page load, restore state for the current record
+        (function () {
+            const initial = document.getElementById('hospitalType').value;
+            if (initial) updateServices(initial);
+        })();
+    </script>
+}

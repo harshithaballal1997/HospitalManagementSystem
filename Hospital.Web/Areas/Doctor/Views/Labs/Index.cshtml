@@ -98,7 +98,11 @@
                                 <td>
                                     @if(item.TestValue.HasValue)
                                     {
-                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">@item.TestValue.Value</span>
+                                        var isHigh = item.TestValue.Value > 100;
+                                        <span class="badge @(isHigh ? "bg-danger" : "bg-primary") bg-opacity-10 @(isHigh ? "text-danger" : "text-primary") fw-bold p-2 pulse-warning">
+                                            @item.TestValue.Value
+                                            @if(isHigh) { <i class="fas fa-exclamation-triangle ms-1"></i> }
+                                        </span>
                                     }
                                     else
                                     {
@@ -164,8 +168,14 @@
                 <h5 class="modal-title">AI Patient Insights</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div id="summaryContent" class="modal-body">
-                Loading AI-generated summary...
+            <div class="modal-body">
+                <div id="summaryContent" class="mb-4">
+                    Loading AI-generated summary...
+                </div>
+                <hr />
+                <div id="historyContent">
+                    Loading medical history...
+                </div>
             </div>
         </div>
     </div>
@@ -175,17 +185,32 @@
     <script>
         function loadSummary(patientId) {
             const modal = new bootstrap.Modal(document.getElementById('summaryModal'));
-            const content = document.getElementById('summaryContent');
-            content.innerHTML = '<div class="text-center"><div class="spinner-border text-info" role="status"></div></div>';
+            const summaryContent = document.getElementById('summaryContent');
+            const historyContent = document.getElementById('historyContent');
+            
+            summaryContent.innerHTML = '<div class="text-center"><div class="spinner-border text-info" role="status"></div><p class="small mt-2">Summarizing clinical history...</p></div>';
+            historyContent.innerHTML = '<div class="text-center"><div class="spinner-border text-secondary" role="status"></div><p class="small mt-2">Fetching lab records...</p></div>';
+            
             modal.show();
             
+            // Fetch AI Summary
             fetch(`/Doctor/Labs/PatientSummary?patientId=${patientId}`)
                 .then(response => response.text())
                 .then(data => {
-                    content.innerHTML = '<div class="markdown-body">' + data + '</div>';
+                    summaryContent.innerHTML = '<div class="markdown-body">' + data + '</div>';
                 })
                 .catch(err => {
-                    content.innerHTML = '<div class="alert alert-danger">Error loading summary.</div>';
+                    summaryContent.innerHTML = '<div class="alert alert-danger">Error loading summary.</div>';
+                });
+
+            // Fetch Lab History
+            fetch(`/Doctor/Labs/GetHistory?patientId=${patientId}`)
+                .then(response => response.text())
+                .then(data => {
+                    historyContent.innerHTML = data;
+                })
+                .catch(err => {
+                    historyContent.innerHTML = '<div class="alert alert-danger">Error loading history.</div>';
                 });
         }
     </script>

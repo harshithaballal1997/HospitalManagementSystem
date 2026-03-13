@@ -1,0 +1,188 @@
+@model Hospital.ViewModels.ApplicationUserViewModel
+@using Hospital.Models
+
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">User Profile</h1>
+            <p class="text-muted small mb-0">Detailed information for <strong>@Model.Name</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-medical-sm btn-medical-edit">
+                <i class="fas fa-user-edit me-2"></i>Edit Profile
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Profile Overview Card -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow border-0 mb-4 text-center p-4">
+                <div class="profile-header mb-3">
+                    <div class="avatar-container mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 120px; height: 120px;">
+                            @if (Model.IsDoctor)
+                            {
+                                <i class="fas fa-user-md fa-4x text-primary"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-user-injured fa-4x text-primary"></i>
+                            }
+                        </div>
+                    </div>
+                    <h4 class="fw-bold mb-1">@Model.Name</h4>
+                    <span class="badge @(Model.IsDoctor ? "bg-success" : "bg-info") rounded-pill px-3 py-2 text-uppercase small">
+                        @(Model.IsDoctor ? "Doctor" : "Patient")
+                    </span>
+                    @if (Model.IsDoctor && !string.IsNullOrEmpty(Model.Specialist))
+                    {
+                        <div class="mt-2 text-primary fw-bold">
+                            <i class="fas fa-stethoscope me-1"></i>@Model.Specialist
+                        </div>
+                    }
+                </div>
+                
+                <div class="divider border-bottom my-3"></div>
+                
+                <div class="account-info text-start">
+                    <label class="small text-uppercase fw-bold text-muted mb-2 d-block">Account Information</label>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-id-badge text-muted me-3 w-20px"></i>
+                        <span class="text-dark small">ID: @Model.Id</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-at text-muted me-3 w-20px"></i>
+                        <span class="text-dark small">@Model.UserName</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-envelope text-muted me-3 w-20px"></i>
+                        <span class="text-dark small">@Model.Email</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Summary Card -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header py-3 bg-medical-dark text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-info-circle me-2"></i>Role Status</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="status-item d-flex align-items-center mb-3">
+                        <div class="icon-circle bg-light me-3">
+                            <i class="fas @(Model.IsDoctor ? "fa-check-circle text-success" : "fa-times-circle text-muted")"></i>
+                        </div>
+                        <div>
+                            <span class="d-block small text-muted">Medical Staff</span>
+                            <span class="fw-bold @(Model.IsDoctor ? "text-success" : "text-dark")">@(Model.IsDoctor ? "Verified Doctor" : "General User/Patient")</span>
+                        </div>
+                    </div>
+                    @if (Model.IsDoctor)
+                    {
+                        <div class="status-item d-flex align-items-center">
+                            <i class="fas fa-certificate text-warning me-3 fa-lg"></i>
+                            <div>
+                                <span class="d-block small text-muted">Specialization</span>
+                                <span class="fw-bold">@Model.Specialist</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Details Card -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow border-0 mb-4 h-100">
+                <div class="card-header py-3 bg-medical-accent text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-id-card me-2"></i>Personal & Contact Details</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label class="small text-uppercase fw-bold text-muted mb-1 d-block">Full Name</label>
+                                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                                    <span class="text-dark fw-bold">@Model.Name</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label class="small text-uppercase fw-bold text-muted mb-1 d-block">Gender</label>
+                                <div class="p-3 bg-light rounded border-start border-info border-4">
+                                    <span class="text-dark fw-bold">
+                                        @if (Model.Gender == Gender.Male)
+                                        {
+                                            <i class="fas fa-mars me-2 text-primary"></i>@Model.Gender
+                                        }
+                                        else if (Model.Gender == Gender.Female)
+                                        {
+                                            <i class="fas fa-venus me-2 text-danger"></i>@Model.Gender
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-genderless me-2 text-muted"></i>@Model.Gender
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="divider border-bottom"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label class="small text-uppercase fw-bold text-muted mb-1 d-block">Primary Email</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-shape bg-success bg-opacity-10 text-success rounded me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-envelope-open"></i>
+                                    </div>
+                                    <span class="text-dark fw-bold">@Model.Email</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label class="small text-uppercase fw-bold text-muted mb-1 d-block">City / Location</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <span class="text-dark fw-bold">@(string.IsNullOrEmpty(Model.City) ? "Not Specified" : Model.City)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="mt-4 p-4 border rounded bg-light">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-history me-2 text-primary"></i>System Activities</h6>
+                                <p class="text-muted small mb-0">
+                                    Active patient allocation records and clinical history can be viewed in the Clinical Dashboard.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-medical-dark { background-color: #4e73df; }
+    .bg-medical-accent { background-color: #36b9cc; }
+    .w-20px { width: 20px; text-align: center; }
+    .icon-shape { display: flex; align-items: center; justify-content: center; }
+    .icon-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+</style>

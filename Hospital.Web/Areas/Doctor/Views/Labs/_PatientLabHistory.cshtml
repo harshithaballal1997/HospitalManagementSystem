@@ -22,8 +22,35 @@
                         </tr>
                     </thead>
                     <tbody class="small">
-                        @foreach (var item in Model)
+                        @{
+                            var historyList = Model.ToList();
+                        }
+                        @for (int i = 0; i < historyList.Count; i++)
                         {
+                            var item = historyList[i];
+                            var nextItem = i + 1 < historyList.Count ? historyList[i+1] : null;
+                            var trendIcon = "";
+                            var trendClass = "";
+                            
+                            if (nextItem != null && item.TestValue.HasValue && nextItem.TestValue.HasValue)
+                            {
+                                if (item.TestValue.Value > nextItem.TestValue.Value)
+                                {
+                                    trendIcon = "fa-arrow-trend-up";
+                                    trendClass = "text-danger"; // Assuming higher is worse for serious patients
+                                }
+                                else if (item.TestValue.Value < nextItem.TestValue.Value)
+                                {
+                                    trendIcon = "fa-arrow-trend-down";
+                                    trendClass = "text-success"; // Improving
+                                }
+                                else
+                                {
+                                    trendIcon = "fa-minus";
+                                    trendClass = "text-muted";
+                                }
+                            }
+                            
                             <tr>
                                 <td class="ps-3 py-2 text-muted">@item.CreatedAt.ToShortDateString()</td>
                                 <td class="py-2 fw-semibold">@item.LabNumber</td>
@@ -34,7 +61,16 @@
                                 <td class="py-2 text-center">
                                     @if(item.TestValue.HasValue)
                                     {
-                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">@item.TestValue.Value</span>
+                                        var isHigh = item.TestValue.Value > 100;
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <span class="badge @(isHigh ? "bg-danger" : "bg-primary") bg-opacity-10 @(isHigh ? "text-danger" : "text-primary") fw-bold me-2">
+                                                @item.TestValue.Value
+                                            </span>
+                                            @if (!string.IsNullOrEmpty(trendIcon))
+                                            {
+                                                <i class="fas @trendIcon @trendClass small" title="Condition trend compared to previous record"></i>
+                                            }
+                                        </div>
                                     }
                                     else
                                     {
@@ -54,7 +90,8 @@
                                     <span class="badge bg-warning bg-opacity-10 text-warning">@item.Temperature°C</span>
                                 </td>
                                 <td class="py-2">
-                                    <div class="text-truncate" style="max-width: 200px;" title="@item.TestResults">
+                                    <div class="text-truncate" @(item.TestResults != null && item.TestResults.Contains("Intensive") ? "style=color:red;" : "") style="max-width: 200px;" title="@item.TestResults">
+                                        @if (item.TestResults != null && item.TestResults.Contains("Intensive")) { <i class="fas fa-exclamation-circle me-1"></i> }
                                         @item.TestResults
                                     </div>
                                 </td>

@@ -31,9 +31,9 @@ namespace Hospital.Web.Areas.Admin.Controllers
             _aiService = aiService;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(int pageNumber = 1, int pageSize = 10)
         {
-            var allocations = _roomAllocationService.GetAllAllocations();
+            var allocations = _roomAllocationService.GetAll(pageNumber, pageSize);
             return View(allocations);
         }
 
