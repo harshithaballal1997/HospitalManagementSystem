@@ -97,7 +97,7 @@ namespace Hospital.Repositories
 
             // Add other model configurations here...
             modelBuilder.Entity<Medicine>()
-                .Property(p => p.Price)
+                .Property(p => p.Cost)
                 .HasColumnType("decimal(18,2)");
         }
 

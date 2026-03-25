@@ -15,4 +15,4 @@ WORKDIR /app
 COPY --from=build /app/out .
 
 # Start the application
-ENTRYPOINT ["dotnet", "Hospital.Web.csproj"]
+ENTRYPOINT ["dotnet", "Hospital.Web.dll"]
