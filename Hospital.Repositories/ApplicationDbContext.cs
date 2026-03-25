@@ -115,6 +115,22 @@ namespace Hospital.Repositories
             modelBuilder.Entity<TestPrice>()
                 .Property(p => p.Price)
                 .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Bill>()
+                .Property(p => p.Advance).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Bill>()
+                .Property(p => p.MedicineCharge).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Bill>()
+                .Property(p => p.OperationCharge).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Bill>()
+                .Property(p => p.RoomCharge).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Bill>()
+                .Property(p => p.TotalBill).HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Payroll>()
+                .Property(p => p.BonusSalary).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Payroll>()
+                .Property(p => p.Compensation).HasColumnType("decimal(18,2)");
         }
 
     }
