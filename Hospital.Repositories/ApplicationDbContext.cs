@@ -99,6 +99,22 @@ namespace Hospital.Repositories
             modelBuilder.Entity<Medicine>()
                 .Property(p => p.Cost)
                 .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Payroll>()
+                .Property(p => p.HourlySalary)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Payroll>()
+                .Property(p => p.NetSalary)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Payroll>()
+                .Property(p => p.Salary)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<TestPrice>()
+                .Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
         }
 
     }
