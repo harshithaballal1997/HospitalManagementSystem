@@ -19,8 +19,15 @@ string npgsqlConnectionString = rawConnectionString;
 if (rawConnectionString.StartsWith("postgres://") || rawConnectionString.StartsWith("postgresql://"))
 {
     var uri = new Uri(rawConnectionString);
-    var userInfo = uri.UserInfo.Split(':');
-    npgsqlConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+    var host = uri.Host;
+    var dbPort = uri.Port > 0 ? uri.Port : 5432;
+    var database = uri.AbsolutePath.TrimStart('/');
+    // Use Uri to safely decode userinfo — password may contain special chars
+    var userInfo = uri.UserInfo;
+    var colonIdx = userInfo.IndexOf(':');
+    var username = Uri.UnescapeDataString(userInfo[..colonIdx]);
+    var password = Uri.UnescapeDataString(userInfo[(colonIdx + 1)..]);
+    npgsqlConnectionString = $"Host={host};Port={dbPort};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
