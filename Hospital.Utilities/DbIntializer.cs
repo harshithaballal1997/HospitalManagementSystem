@@ -79,7 +79,7 @@ namespace Hospital.Utilities
             // removed early return
 
             var hospitals = _context.HospitalInfos.ToList();
-            if (!hospitals.Any())
+            if (hospitals.Count <= 1)
             {
                 // Seed at least one hospital if none exists
                                 var defaultHospitals = new List<HospitalInfo>
