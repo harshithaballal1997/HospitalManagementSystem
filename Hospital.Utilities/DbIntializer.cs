@@ -1,4 +1,4 @@
-﻿using Hospital.Models;
+using Hospital.Models;
 using Hospital.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -75,6 +75,9 @@ namespace Hospital.Utilities
 
         private void SeedRoomsAndBeds()
         {
+            // Skip seeding entirely if rooms already exist (avoids thousands of inserts on restart)
+            if (_context.Rooms.Any()) return;
+
             var hospitals = _context.HospitalInfos.ToList();
             if (!hospitals.Any())
             {

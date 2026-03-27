@@ -52,6 +52,10 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+// Bind to Render's PORT environment variable
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://+:{port}");
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -60,7 +64,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirect in container environments (Render handles TLS externally)
+if (!app.Environment.IsEnvironment("Container") && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RENDER")))
+    app.UseHttpsRedirection();
+else if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseStaticFiles();
 DataSeeding();
 app.UseRouting();
