@@ -82,17 +82,13 @@ namespace Hospital.Utilities
             if (!hospitals.Any())
             {
                 // Seed at least one hospital if none exists
-                var defaultHospital = new HospitalInfo
+                var defaultHospitals = new List<HospitalInfo>
                 {
-                    Name = "Apollo Hospital",
-                    Type = "Multispecialty",
-                    City = "Bangalore",
-                    Pincode = "560001",
-                    Country = "India"
+
                 };
-                _context.HospitalInfos.Add(defaultHospital);
+                _context.HospitalInfos.AddRange(defaultHospitals);
                 _context.SaveChanges();
-                hospitals.Add(defaultHospital);
+                hospitals.AddRange(defaultHospitals);
             }
 
             foreach (var hospital in hospitals)
