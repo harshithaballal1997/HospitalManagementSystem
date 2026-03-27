@@ -12,9 +12,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+// Support both URL-style (Render) and key=value style connection strings
+var rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+string npgsqlConnectionString = rawConnectionString;
+
+if (rawConnectionString.StartsWith("postgres://") || rawConnectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(rawConnectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    npgsqlConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
-    ));//b => b.MigrationsAssembly("Hospital.Web")
+    options.UseNpgsql(npgsqlConnectionString));
 
 builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.ConfigureApplicationCookie(options =>
