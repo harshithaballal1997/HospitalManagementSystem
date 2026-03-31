@@ -218,7 +218,7 @@ namespace Hospital.Utilities
                     Gender = (i % 2 == 0) ? Gender.Female : Gender.Male,
                     Nationality = "USA",
                     Address = $"{i}00 Health Ave, City",
-                    DOB = DateTime.Now.AddYears(-20 - (i % 50)),
+                    DOB = DateTime.UtcNow.AddYears(-20 - (i % 50)),
                     IsDoctor = false
                 };
                 newPatients.Add(p);
@@ -249,7 +249,7 @@ namespace Hospital.Utilities
                     BedId = bed.Id,
                     HospitalId = bed.Room.HospitalId,
                     IsDischarged = false,
-                    AllocationDate = DateTime.Now.AddDays(-5),
+                    AllocationDate = DateTime.UtcNow.AddDays(-5),
                     Status = AllocationStatus.Occupied
                 });
 
@@ -263,7 +263,7 @@ namespace Hospital.Utilities
                     labs.Add(new Lab
                     {
                         PatientId = sp.Id,
-                        LabNumber = "LAB-" + DateTime.Now.Ticks.ToString().Substring(8) + m,
+                        LabNumber = "LAB-" + DateTime.UtcNow.Ticks.ToString().Substring(8) + m,
                         TestType = "Metabolic Panel",
                         TestCode = "CMP-01",
                         Weight = 70 + (m % 3),
@@ -272,7 +272,7 @@ namespace Hospital.Utilities
                         Temperature = 37 + (m > 2 ? 1 : 0),
                         TestValue = values[m],
                         TestResults = statuses[m],
-                        CreatedAt = DateTime.Now.AddDays(-5 + m)
+                        CreatedAt = DateTime.UtcNow.AddDays(-5 + m)
                     });
                 }
             }
