@@ -335,18 +335,28 @@ namespace Hospital.Utilities
         }
 
 
+        
         private void SeedDoctors()
         {
             _context.ChangeTracker.Clear();
-            var doctorsCount = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult().Count();
-            if (doctorsCount >= 40) return; // Already seeded
+            var doctors = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult();
+            
+            // If we already have a lot of doctors, let's just clear them and re-seed to ensure the 5-7 distribution is perfect
+            if (doctors.Count > 10)
+            {
+                foreach (var doc in doctors)
+                {
+                    _userManager.DeleteAsync(doc).GetAwaiter().GetResult();
+                }
+                _context.SaveChanges();
+            }
 
             var passwordHash = _userManager.FindByEmailAsync("admin@hospital.com").GetAwaiter().GetResult()?.PasswordHash;
             var role = _roleManager.FindByNameAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult();
 
-            string[] firstNamesM = { "Gregory", "Derek", "Preston", "Richard", "Owen", "Jackson", "Mark", "Stephen", "Martin", "Conrad", "Shaun", "Neil", "Marcus", "Levi", "Christopher" };
-            string[] firstNamesF = { "Meredith", "Cristina", "Miranda", "Lexie", "Arizona", "April", "Amelia", "Maggie", "Jo", "Teddy", "Callie", "Addison", "Nicole", "Claire", "Alison" };
-            string[] lastNames = { "House", "Shepherd", "Burke", "Webber", "Hunt", "Avery", "Sloan", "Strange", "Melendez", "Hawkins", "Murphy", "Melendez", "Andrews", "Benson", "Turk" };
+            string[] firstNamesM = { "Gregory", "Derek", "Preston", "Richard", "Owen", "Jackson", "Mark", "Stephen", "Martin", "Conrad", "Shaun", "Neil", "Marcus", "Levi", "Christopher", "James", "John", "Robert", "Michael", "William", "David" };
+            string[] firstNamesF = { "Meredith", "Cristina", "Miranda", "Lexie", "Arizona", "April", "Amelia", "Maggie", "Jo", "Teddy", "Callie", "Addison", "Nicole", "Claire", "Alison", "Mary", "Patricia", "Linda", "Barbara", "Elizabeth" };
+            string[] lastNames = { "House", "Shepherd", "Burke", "Webber", "Hunt", "Avery", "Sloan", "Strange", "Melendez", "Hawkins", "Murphy", "Andrews", "Benson", "Turk", "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller" };
             string[] specializations = { "Cardiology", "Neurology", "General Surgery", "Pediatrics", "Orthopedics", "Oncology", "Psychiatry", "Emergency Medicine", "Radiology", "Anesthesiology" };
 
             var newDoctors = new List<ApplicationUser>();
@@ -355,50 +365,44 @@ namespace Hospital.Utilities
             var hospitals = _context.HospitalInfos.ToList();
             if (!hospitals.Any()) return;
 
-            int docIndex = 1;
-            int hIndex = 0;
+            Random rand = new Random(54321);
+            int docTotalIndex = 1;
 
-            // Generate ~80 doctors
-            for (int i = 0; i < 80; i++)
+            foreach (var hosp in hospitals)
             {
-                string fname = (i % 2 == 0) ? firstNamesM[i / 2 % 15] : firstNamesF[i / 2 % 15];
-                string lname = lastNames[(i * 3) % 15];
-                string spec = specializations[i % 10];
-                var docId = Guid.NewGuid().ToString();
-
-                // Assign to hospital mapping logic:
-                // Constraints: All hospitals need at least one doctor. Least one needs 10.
-                // Hospital 0 gets 10 doctors (docIndex 1 to 10)
-                // Rest of the 70 doctors go to the remaining 39 hospitals (1-2 each)
-                HospitalInfo assignedHosp = hospitals[0];
-                if (docIndex > 10)
+                // Each hospital gets 5 to 7 doctors
+                int numDocs = rand.Next(5, 8); 
+                for (int d = 0; d < numDocs; d++)
                 {
-                    hIndex++;
-                    assignedHosp = hospitals[hIndex % hospitals.Count];
+                    bool isMale = rand.Next(2) == 0;
+                    string fname = isMale ? firstNamesM[rand.Next(firstNamesM.Length)] : firstNamesF[rand.Next(firstNamesF.Length)];
+                    string lname = lastNames[rand.Next(lastNames.Length)];
+                    string spec = specializations[rand.Next(specializations.Length)];
+                    var docId = Guid.NewGuid().ToString();
+
+                    var doctor = new ApplicationUser
+                    {
+                        Id = docId,
+                        UserName = $"dr.{fname.ToLower()}.{lname.ToLower()}{docTotalIndex}@hospital.com",
+                        NormalizedUserName = $"DR.{fname.ToUpper()}.{lname.ToUpper()}{docTotalIndex}@HOSPITAL.COM",
+                        Email = $"dr.{fname.ToLower()}.{lname.ToLower()}{docTotalIndex}@hospital.com",
+                        NormalizedEmail = $"DR.{fname.ToUpper()}.{lname.ToUpper()}{docTotalIndex}@HOSPITAL.COM",
+                        EmailConfirmed = true,
+                        PasswordHash = passwordHash,
+                        SecurityStamp = Guid.NewGuid().ToString(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        Name = $"Dr. {fname} {lname}",
+                        Gender = isMale ? Gender.Male : Gender.Female,
+                        Nationality = "USA",
+                        Address = $"{hosp.Name}, {hosp.City}", 
+                        DOB = DateTime.UtcNow.AddYears(-30 - rand.Next(30)),
+                        IsDoctor = true,
+                        Specialist = spec
+                    };
+                    newDoctors.Add(doctor);
+                    userRoles.Add(new IdentityUserRole<string> { RoleId = role.Id, UserId = docId });
+                    docTotalIndex++;
                 }
-
-                var d = new ApplicationUser
-                {
-                    Id = docId,
-                    UserName = $"dr.{fname.ToLower()}.{lname.ToLower()}{docIndex}@hospital.com",
-                    NormalizedUserName = $"DR.{fname.ToUpper()}.{lname.ToUpper()}{docIndex}@HOSPITAL.COM",
-                    Email = $"dr.{fname.ToLower()}.{lname.ToLower()}{docIndex}@hospital.com",
-                    NormalizedEmail = $"DR.{fname.ToUpper()}.{lname.ToUpper()}{docIndex}@HOSPITAL.COM",
-                    EmailConfirmed = true,
-                    PasswordHash = passwordHash,
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                    ConcurrencyStamp = Guid.NewGuid().ToString(),
-                    Name = $"Dr. {fname} {lname}",
-                    Gender = (i % 2 == 0) ? Gender.Male : Gender.Female,
-                    Nationality = "USA",
-                    Address = $"{assignedHosp.Name}, {assignedHosp.City}", // Maps to Location in UI
-                    DOB = DateTime.UtcNow.AddYears(-35 - (i % 20)),
-                    IsDoctor = true,
-                    Specialist = spec
-                };
-                newDoctors.Add(d);
-                userRoles.Add(new IdentityUserRole<string> { RoleId = role.Id, UserId = docId });
-                docIndex++;
             }
 
             _context.Users.AddRange(newDoctors);
@@ -406,5 +410,6 @@ namespace Hospital.Utilities
             _context.SaveChanges();
             _context.ChangeTracker.Clear();
         }
+
     }
 }
