@@ -336,19 +336,25 @@ namespace Hospital.Utilities
 
 
         
+        
         private void SeedDoctors()
         {
             _context.ChangeTracker.Clear();
-            var doctors = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult();
+            var doctorsCount = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult().Count();
             
-            // If we already have a lot of doctors, let's just clear them and re-seed to ensure the 5-7 distribution is perfect
-            if (doctors.Count > 10)
+            // Re-seed if count is low or if we want to ensure the 10-12 distribution
+            if (doctorsCount < 200)
             {
-                foreach (var doc in doctors)
+                var existingDocs = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult();
+                foreach (var doc in existingDocs)
                 {
                     _userManager.DeleteAsync(doc).GetAwaiter().GetResult();
                 }
                 _context.SaveChanges();
+            }
+            else
+            {
+                return; // Already densely seeded
             }
 
             var passwordHash = _userManager.FindByEmailAsync("admin@hospital.com").GetAwaiter().GetResult()?.PasswordHash;
@@ -365,13 +371,13 @@ namespace Hospital.Utilities
             var hospitals = _context.HospitalInfos.ToList();
             if (!hospitals.Any()) return;
 
-            Random rand = new Random(54321);
+            Random rand = new Random(999);
             int docTotalIndex = 1;
 
             foreach (var hosp in hospitals)
             {
-                // Each hospital gets 5 to 7 doctors
-                int numDocs = rand.Next(5, 8); 
+                // Increase density to 10-12 per hospital
+                int numDocs = rand.Next(10, 13); 
                 for (int d = 0; d < numDocs; d++)
                 {
                     bool isMale = rand.Next(2) == 0;
@@ -410,6 +416,7 @@ namespace Hospital.Utilities
             _context.SaveChanges();
             _context.ChangeTracker.Clear();
         }
+
 
     }
 }
