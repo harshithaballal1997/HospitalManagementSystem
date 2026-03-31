@@ -98,10 +98,16 @@
                                 <td>
                                     @if(item.TestValue.HasValue)
                                     {
-                                        var isHigh = item.TestValue.Value > 100;
-                                        <span class="badge @(isHigh ? "bg-danger" : "bg-primary") bg-opacity-10 @(isHigh ? "text-danger" : "text-primary") fw-bold p-2 pulse-warning">
+                                        var tv = item.TestValue.Value;
+                                        var isDanger = tv > 100;
+                                        var isRisky = tv > 80 && tv <= 100;
+                                        var badgeBg = isDanger ? "bg-danger" : (isRisky ? "bg-warning" : "bg-success");
+                                        var textCol = isDanger ? "text-danger" : (isRisky ? "text-dark" : "text-success");
+                                        
+                                        <span class="badge @badgeBg bg-opacity-10 @textCol fw-bold p-2 @(isDanger ? "pulse-warning" : "")">
                                             @item.TestValue.Value
-                                            @if(isHigh) { <i class="fas fa-exclamation-triangle ms-1"></i> }
+                                            @if(isDanger) { <i class="fas fa-exclamation-triangle ms-1"></i> }
+                                            else if(isRisky) { <i class="fas fa-exclamation-circle ms-1"></i> }
                                         </span>
                                     }
                                     else

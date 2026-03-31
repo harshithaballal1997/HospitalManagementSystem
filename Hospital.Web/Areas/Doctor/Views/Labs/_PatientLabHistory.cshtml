@@ -61,9 +61,13 @@
                                 <td class="py-2 text-center">
                                     @if(item.TestValue.HasValue)
                                     {
-                                        var isHigh = item.TestValue.Value > 100;
+                                        var tv = item.TestValue.Value;
+                                        var isDanger = tv > 100;
+                                        var isRisky = tv > 80 && tv <= 100;
+                                        var badgeBg = isDanger ? "bg-danger" : (isRisky ? "bg-warning" : "bg-success");
+                                        var textCol = isDanger ? "text-danger" : (isRisky ? "text-dark" : "text-success");
                                         <div class="d-flex align-items-center justify-content-center">
-                                            <span class="badge @(isHigh ? "bg-danger" : "bg-primary") bg-opacity-10 @(isHigh ? "text-danger" : "text-primary") fw-bold me-2">
+                                            <span class="badge @badgeBg bg-opacity-10 @textCol fw-bold me-2">
                                                 @item.TestValue.Value
                                             </span>
                                             @if (!string.IsNullOrEmpty(trendIcon))
