@@ -18,7 +18,7 @@ namespace Hospital.Web.Areas.Admin.Controllers
             _userService = userService;
         }
 
-        public IActionResult Index(int pageNumber = 1, int pageSize = 40)
+        public IActionResult Index(int pageNumber = 1, int pageSize = 10)
         {
             var result = _userService.GetAllDoctor(pageNumber, pageSize);
             return View(result);
