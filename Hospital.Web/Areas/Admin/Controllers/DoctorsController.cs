@@ -21,7 +21,7 @@ namespace Hospital.Web.Areas.Admin.Controllers
         public IActionResult Index(int pageNumber = 1, int pageSize = 40)
         {
             var result = _userService.GetAllDoctor(pageNumber, pageSize);
-            return View(result.Data);
+            return View(result);
         }
 
         [HttpGet]

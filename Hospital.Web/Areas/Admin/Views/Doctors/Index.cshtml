@@ -1,4 +1,4 @@
-@model IEnumerable<Hospital.ViewModels.ApplicationUserViewModel>
+@model Hospital.Utilities.PagedResult<Hospital.ViewModels.ApplicationUserViewModel>
 
 @{
     ViewData["Title"] = "Doctor Management";
@@ -10,9 +10,20 @@
             <h1 class="h3 mb-0 text-gray-800">Doctor Management</h1>
             <p class="text-muted small mb-0">Manage hospital medical staff and specialists.</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Add New Doctor
-        </a>
+        <div class="d-flex gap-3 align-items-center">
+            <div class="d-flex align-items-center bg-white px-3 py-2 rounded shadow-sm">
+                <label class="small text-muted me-2 mb-0">Show:</label>
+                <select class="form-select form-select-sm border-0" style="width: 80px;" onchange="location.href='?pageSize=' + this.value">
+                    <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                    <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                    <option value="40" selected="@(Model.PageSize == 40)">40</option>
+                    <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                </select>
+            </div>
+            <a asp-action="Create" class="btn btn-primary shadow-sm">
+                <i class="fas fa-plus fa-sm text-white-50 me-1"></i> Add New Doctor
+            </a>
+        </div>
     </div>
 
     <div class="modern-card">
@@ -29,7 +40,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Data)
                     {
                         <tr>
                             <td>
@@ -73,6 +84,44 @@
                     }
                 </tbody>
             </table>
+        </div>
+        
+        <!-- Pagination Footer -->
+        <div class="d-flex justify-content-between align-items-center border-top px-4 py-3">
+            <div class="text-muted small">
+                Showing @((Model.PageNumber - 1) * Model.PageSize + 1) to @(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalItems)) of @Model.TotalItems doctors
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    @{
+                        int totalPages = (int)Math.Ceiling((double)Model.TotalItems / Model.PageSize);
+                        int startPage = Math.Max(1, Model.PageNumber - 2);
+                        int endPage = Math.Min(totalPages, startPage + 4);
+                        if (endPage - startPage < 4) startPage = Math.Max(1, endPage - 4);
+                    }
+                    
+                    @if (Model.PageNumber > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize"><i class="fas fa-chevron-left"></i></a>
+                        </li>
+                    }
+
+                    @for (int i = startPage; i <= endPage; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-pageSize="@Model.PageSize">@i</a>
+                        </li>
+                    }
+
+                    @if (Model.PageNumber < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize"><i class="fas fa-chevron-right"></i></a>
+                        </li>
+                    }
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
