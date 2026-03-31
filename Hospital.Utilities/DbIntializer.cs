@@ -178,10 +178,12 @@ namespace Hospital.Utilities
                     }
                 }
             }
+            _context.ChangeTracker.Clear();
         }
 
         private void SeedPatientsAndClinicalData()
         {
+            _context.ChangeTracker.Clear();
             var adminId = _userManager.FindByEmailAsync("admin@hospital.com").GetAwaiter().GetResult()?.Id;
             var doctorId = _userManager.GetUsersInRoleAsync(WebSiteRoles.WebSite_Doctor).GetAwaiter().GetResult().FirstOrDefault()?.Id;
             
