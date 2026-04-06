@@ -4,7 +4,7 @@
     ViewData["Title"] = "Reschedule Appointment";
 }
 
-<div class="container px-4 py-4" style="max-width:760px;">
+<div class="container px-4 py-4" style="max-width:860px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-1 fw-bold text-primary"><i class="fas fa-calendar-alt me-2"></i>Reschedule Appointment</h1>
@@ -14,42 +14,43 @@
     </div>
 
     <div class="modern-card shadow-sm border-0">
-        <form asp-action="Edit" method="post">
+        <form asp-action="Edit" method="post" id="editForm">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="All" class="alert alert-danger small" style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+            <!-- Hidden field to hold selected time slot -->
+            <input type="hidden" name="TimeSlot" id="selectedSlotInput" value="@Model.TimeSlot" />
 
-            <div class="row g-3">
-                <div class="col-md-6">
+            @if (ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="alert alert-danger small mb-3">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted">Patient</label>
-                    <select asp-for="PatientId" asp-items="ViewBag.Patients" class="form-select bg-light border-0">
+                    <select asp-for="PatientId" asp-items="ViewBag.Patients" class="form-select bg-light border-0 py-2">
                         <option value="">-- Select Patient --</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted">Doctor</label>
-                    <select id="doctorSelect" asp-for="DoctorId" asp-items="ViewBag.Doctors" class="form-select bg-light border-0">
+                    <select id="doctorSelect" asp-for="DoctorId" asp-items="ViewBag.Doctors" class="form-select bg-light border-0 py-2">
                         <option value="">-- Select Doctor --</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted">Date</label>
-                    <input type="date" asp-for="AppointmentDate" class="form-control bg-light border-0" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted">Time Slot</label>
-                    <select id="slotSelect" asp-for="TimeSlot" class="form-select bg-light border-0">
-                        <option value="@Model.TimeSlot">@Model.TimeSlot (current)</option>
-                    </select>
-                    <div id="slotSpinner" class="text-muted small mt-1" style="display:none;"><i class="fas fa-spinner fa-spin me-1"></i>Loading slots...</div>
-                </div>
-                <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted">Status</label>
-                    <select asp-for="Status" class="form-select bg-light border-0">
+                    <select asp-for="Status" class="form-select bg-light border-0 py-2">
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Cancelled">Cancelled</option>
                     </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted">Date</label>
+                    <input type="date" id="dateInput" asp-for="AppointmentDate" class="form-control bg-light border-0 py-2" />
                 </div>
                 <div class="col-12">
                     <label class="form-label small fw-bold text-muted">Reason / Notes</label>
@@ -57,8 +58,30 @@
                 </div>
             </div>
 
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-medical btn-medical-edit px-4">
+            <!-- Time Slot Section -->
+            <div id="slotSection" class="mb-4">
+                <label class="form-label small fw-bold text-muted"><i class="fas fa-clock me-1"></i>Available Time Slots</label>
+
+                <div id="slotLoader" style="display:none;" class="p-3 text-center text-muted small bg-light rounded-3">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Checking availability...
+                </div>
+
+                <div id="slotGrid" class="row g-2"></div>
+
+                <div id="slotError" style="display:none;" class="alert alert-warning small mt-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    No available slots for this day.
+                </div>
+
+                <div id="selectedSlotBadge" class="mt-2 text-primary small fw-bold">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Currently Selected: <span id="selectedSlotLabel" class="badge bg-primary px-2 py-1 ms-1">@Model.TimeSlot</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" id="submitBtn" class="btn btn-medical btn-medical-edit px-4">
                     <i class="fas fa-save me-1"></i> Save Changes
                 </button>
                 <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
@@ -68,29 +91,128 @@
 </div>
 
 @section Scripts {
+<style>
+    .slot-btn {
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        width: 100%;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        color: #495057;
+    }
+    .slot-btn:hover { background: #0056b3; color: white; border-color: #0056b3; }
+    .slot-btn.selected { background: #0056b3; color: white; border-color: #0056b3; font-weight: 700; }
+</style>
 <script>
+    const doctorSel = document.getElementById('doctorSelect');
+    const dateInput = document.getElementById('dateInput');
+    const slotInput = document.getElementById('selectedSlotInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const slotLoader = document.getElementById('slotLoader');
+    const slotGrid = document.getElementById('slotGrid');
+    const slotError = document.getElementById('slotError');
+    const selectedBadge = document.getElementById('selectedSlotBadge');
+    const selectedLabel = document.getElementById('selectedSlotLabel');
+    
+    // The slot the appointment currently holds in the DB
+    const originalSlot = '@Model.TimeSlot';
+    const originalDate = '@Model.AppointmentDate.ToString("yyyy-MM-dd")';
+
     function loadSlots() {
-        const doctorId = document.getElementById('doctorSelect').value;
-        const date = document.querySelector('[name="AppointmentDate"]').value;
-        const slotSelect = document.getElementById('slotSelect');
-        const spinner = document.getElementById('slotSpinner');
+        const doctorId = doctorSel.value;
+        const date = dateInput.value;
 
         if (!doctorId || !date) return;
 
-        spinner.style.display = 'block';
-        const currentSlot = '@Model.TimeSlot';
+        slotLoader.style.display = 'block';
+        slotGrid.style.display = 'none';
+        slotError.style.display = 'none';
+        
+        // If we change the date entirely, usually we clear the selected slot 
+        // to force them to pick a new one, unless it's the original date.
+        if (date !== originalDate) {
+            slotInput.value = '';
+            selectedBadge.style.display = 'none';
+            submitBtn.disabled = true;
+        } else {
+            // Back to original date, restore original slot conceptually
+            slotInput.value = originalSlot;
+            selectedLabel.textContent = originalSlot;
+            selectedBadge.style.display = 'block';
+            submitBtn.disabled = false;
+        }
 
-        fetch(`/Admin/Appointments/GetAvailableSlots?doctorId=${doctorId}&date=${date}`)
-            .then(r => r.json())
-            .then(slots => {
-                spinner.style.display = 'none';
-                slotSelect.innerHTML = '';
-                // Always include the current slot
-                if (currentSlot) slotSelect.add(new Option(currentSlot + ' (current)', currentSlot));
-                slots.filter(s => s !== currentSlot).forEach(s => slotSelect.add(new Option(s, s)));
+        fetch('/Admin/Appointments/GetAvailableSlots?doctorId=' + encodeURIComponent(doctorId) + '&date=' + encodeURIComponent(date))
+            .then(function(r) { return r.json(); })
+            .then(function(slots) {
+                slotLoader.style.display = 'none';
+
+                // If loading the original date, the original slot is already "taken" by this appointment
+                // so it might not be in the 'slots' array unless the backend specifically ignores 'this' appointment ID.
+                // We'll manually insert the original slot into the list if it's the original date
+                if (date === originalDate && !slots.includes(originalSlot)) {
+                    slots.push(originalSlot);
+                    // simple time sort to put it back in order (assumes hh:mm tt format)
+                    slots.sort((a,b) => new Date('1970/01/01 ' + a) - new Date('1970/01/01 ' + b));
+                }
+
+                if (!slots || slots.length === 0) {
+                    slotError.style.display = 'block';
+                    return;
+                }
+
+                slotGrid.innerHTML = '';
+                slots.forEach(function(slot) {
+                    var col = document.createElement('div');
+                    col.className = 'col-6 col-sm-4 col-md-3';
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'slot-btn';
+                    btn.textContent = slot;
+                    
+                    if (slot === slotInput.value) {
+                        btn.classList.add('selected');
+                    }
+                    
+                    btn.addEventListener('click', function() {
+                        document.querySelectorAll('.slot-btn').forEach(function(b) { b.classList.remove('selected'); });
+                        btn.classList.add('selected');
+                        slotInput.value = slot;
+                        selectedLabel.textContent = slot;
+                        selectedBadge.style.display = 'block';
+                        submitBtn.disabled = false;
+                    });
+                    
+                    col.appendChild(btn);
+                    slotGrid.appendChild(col);
+                });
+
+                slotGrid.style.display = 'flex';
+                slotGrid.style.flexWrap = 'wrap';
+            })
+            .catch(function(err) {
+                slotLoader.style.display = 'none';
+                slotError.style.display = 'block';
+                slotError.textContent = 'Error checking slots.';
             });
     }
-    document.getElementById('doctorSelect').addEventListener('change', loadSlots);
-    document.querySelector('[name="AppointmentDate"]').addEventListener('change', loadSlots);
+
+    doctorSel.addEventListener('change', loadSlots);
+    dateInput.addEventListener('change', loadSlots);
+
+    // Initial load to render buttons
+    loadSlots();
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        if (!slotInput.value) {
+            e.preventDefault();
+            alert('Please select a time slot.');
+        }
+    });
 </script>
 }
