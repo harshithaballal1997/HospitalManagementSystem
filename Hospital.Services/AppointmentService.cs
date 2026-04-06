@@ -21,25 +21,47 @@ namespace Hospital.Services
         public async Task<IEnumerable<string>> GetAvailableSlotsAsync(string doctorId, DateTime date)
         {
             var dayOfWeek = date.DayOfWeek;
+
+            // Skip weekends if no availability is configured
             var availability = _unitOfWork.GenericRepository<DoctorAvailability>()
                 .GetAll(filter: x => x.DoctorId == doctorId && x.DayOfWeek == dayOfWeek)
                 .FirstOrDefault();
 
-            if (availability == null)
-                return Enumerable.Empty<string>();
+            TimeSpan startTime;
+            TimeSpan endTime;
+            int slotDuration;
+
+            if (availability != null)
+            {
+                startTime = availability.StartTime;
+                endTime = availability.EndTime;
+                slotDuration = availability.SlotDuration;
+            }
+            else
+            {
+                // Default fallback: Mon–Fri 10:00 AM – 4:00 PM, 30-min slots
+                if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+                    return Enumerable.Empty<string>();
+
+                startTime = new TimeSpan(10, 0, 0);
+                endTime = new TimeSpan(16, 0, 0);
+                slotDuration = 30;
+            }
 
             // Generate all possible slots
             var slots = new List<string>();
-            var currentTime = availability.StartTime;
-            while (currentTime.Add(TimeSpan.FromMinutes(availability.SlotDuration)) <= availability.EndTime)
+            var currentTime = startTime;
+            while (currentTime.Add(TimeSpan.FromMinutes(slotDuration)) <= endTime)
             {
                 slots.Add(DateTime.Today.Add(currentTime).ToString("hh:mm tt"));
-                currentTime = currentTime.Add(TimeSpan.FromMinutes(availability.SlotDuration));
+                currentTime = currentTime.Add(TimeSpan.FromMinutes(slotDuration));
             }
 
             // Get existing appointments for that day
             var existingAppointments = _unitOfWork.GenericRepository<Appointment>()
-                .GetAll(filter: x => x.DoctorId == doctorId && x.AppointmentDate.Date == date.Date && x.Status != AppointmentStatus.Cancelled)
+                .GetAll(filter: x => x.DoctorId == doctorId
+                    && x.AppointmentDate.Date == date.Date
+                    && x.Status != AppointmentStatus.Cancelled)
                 .Select(x => x.TimeSlot)
                 .ToList();
 
