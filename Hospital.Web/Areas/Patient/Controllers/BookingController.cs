@@ -48,9 +48,16 @@ namespace Hospital.Web.Areas.Patient.Controllers
         {
             if (string.IsNullOrEmpty(date)) return Json(new List<string>());
             
-            DateTime appointmentDate = DateTime.Parse(date);
-            var slots = await _appointmentService.GetAvailableSlotsAsync(doctorId, appointmentDate);
-            return Json(slots);
+            try 
+            {
+                DateTime appointmentDate = DateTime.ParseExact(date, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                var slots = await _appointmentService.GetAvailableSlotsAsync(doctorId, appointmentDate);
+                return Json(slots);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpPost]

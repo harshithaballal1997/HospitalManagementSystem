@@ -218,8 +218,16 @@ namespace Hospital.Web.Areas.Admin.Controllers
         public async Task<IActionResult> GetAvailableSlots(string doctorId, string date)
         {
             if (string.IsNullOrEmpty(date)) return Json(new string[] { });
-            var slots = await _appointmentService.GetAvailableSlotsAsync(doctorId, DateTime.Parse(date));
-            return Json(slots);
+            try
+            {
+                var dt = DateTime.ParseExact(date, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                var slots = await _appointmentService.GetAvailableSlotsAsync(doctorId, dt);
+                return Json(slots);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         // ─── HELPERS ────────────────────────────────────────────────────────
