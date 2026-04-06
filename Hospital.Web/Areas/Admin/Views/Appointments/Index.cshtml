@@ -10,18 +10,21 @@
             <h1 class="h3 mb-1 fw-bold text-primary"><i class="fas fa-calendar-check me-2"></i>Appointment Management</h1>
             <p class="text-muted small mb-0">View and manage all patient bookings across your hospital network.</p>
         </div>
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success mb-0 py-2 px-3 small"><i class="fas fa-check-circle me-1"></i>@TempData["Success"]</div>
-        }
+        <div class="d-flex align-items-center gap-3">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success mb-0 py-2 px-3 small"><i class="fas fa-check-circle me-1"></i>@TempData["Success"]</div>
+            }
+            <a asp-action="Create" class="btn btn-medical btn-medical-create shadow-sm">
+                <i class="fas fa-plus me-1"></i> New Appointment
+            </a>
+        </div>
     </div>
 
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="modern-card bg-primary text-white d-flex align-items-center">
-                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
-                    <i class="fas fa-calendar-alt fs-4"></i>
-                </div>
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3"><i class="fas fa-calendar-alt fs-4"></i></div>
                 <div>
                     <h6 class="mb-0 opacity-75 small">Total Booked</h6>
                     <h3 class="mb-0 fw-bold">@Model.Count</h3>
@@ -30,9 +33,7 @@
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="modern-card bg-warning text-white d-flex align-items-center">
-                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
-                    <i class="fas fa-hourglass-half fs-4"></i>
-                </div>
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3"><i class="fas fa-hourglass-half fs-4"></i></div>
                 <div>
                     <h6 class="mb-0 opacity-75 small">Pending</h6>
                     <h3 class="mb-0 fw-bold">@Model.Count(x => x.Status == "Pending")</h3>
@@ -41,9 +42,7 @@
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="modern-card bg-success text-white d-flex align-items-center">
-                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
-                    <i class="fas fa-check-circle fs-4"></i>
-                </div>
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3"><i class="fas fa-check-circle fs-4"></i></div>
                 <div>
                     <h6 class="mb-0 opacity-75 small">Confirmed</h6>
                     <h3 class="mb-0 fw-bold">@Model.Count(x => x.Status == "Confirmed")</h3>
@@ -52,9 +51,7 @@
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="modern-card bg-danger text-white d-flex align-items-center">
-                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
-                    <i class="fas fa-times-circle fs-4"></i>
-                </div>
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3"><i class="fas fa-times-circle fs-4"></i></div>
                 <div>
                     <h6 class="mb-0 opacity-75 small">Cancelled</h6>
                     <h3 class="mb-0 fw-bold">@Model.Count(x => x.Status == "Cancelled")</h3>
@@ -78,7 +75,7 @@
                         <th>Time Slot</th>
                         <th>Reason</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,6 +85,10 @@
                             <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fas fa-calendar-times fa-3x mb-3 d-block text-light"></i>
                                 No appointments have been booked yet.
+                                <br />
+                                <a asp-action="Create" class="btn btn-medical btn-medical-create btn-medical-sm mt-3">
+                                    <i class="fas fa-plus me-1"></i> Create First Appointment
+                                </a>
                             </td>
                         </tr>
                     }
@@ -96,52 +97,37 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 me-2">
-                                        <i class="fas fa-user"></i>
-                                    </div>
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 me-2"><i class="fas fa-user"></i></div>
                                     <span class="fw-bold small">@apt.PatientName</span>
                                 </div>
                             </td>
-                            <td>
-                                <span class="small text-muted">@apt.DoctorName</span>
-                            </td>
-                            <td>
-                                <span class="small fw-bold">@apt.AppointmentDate.ToString("MMM dd, yyyy")</span>
-                            </td>
+                            <td><span class="small text-muted">@apt.DoctorName</span></td>
+                            <td><span class="small fw-bold">@apt.AppointmentDate.ToString("MMM dd, yyyy")</span></td>
                             <td>
                                 <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
                                     <i class="far fa-clock me-1"></i>@apt.TimeSlot
                                 </span>
                             </td>
-                            <td>
-                                <span class="text-muted small">@(apt.Description ?? "-")</span>
-                            </td>
+                            <td><span class="text-muted small">@(apt.Description ?? "-")</span></td>
                             <td>
                                 @{
-                                    var badgeClass = apt.Status switch {
-                                        "Confirmed" => "bg-success",
-                                        "Cancelled" => "bg-danger",
-                                        _ => "bg-warning"
-                                    };
+                                    var bc = apt.Status switch { "Confirmed" => "bg-success", "Cancelled" => "bg-danger", _ => "bg-warning" };
+                                    var tc = apt.Status switch { "Confirmed" => "text-success", "Cancelled" => "text-danger", _ => "text-warning" };
                                 }
-                                <span class="badge @badgeClass bg-opacity-15 text-@(apt.Status == "Confirmed" ? "success" : apt.Status == "Cancelled" ? "danger" : "warning") px-3 py-2">
-                                    @apt.Status
-                                </span>
+                                <span class="badge @bc bg-opacity-15 @tc px-3 py-2">@apt.Status</span>
                             </td>
                             <td>
-                                @if (apt.Status != "Cancelled")
-                                {
-                                    <form asp-action="Cancel" method="post" onsubmit="return confirm('Cancel this appointment?');" class="d-inline">
-                                        <input type="hidden" name="id" value="@apt.Id" />
-                                        <button type="submit" class="btn btn-medical btn-medical-delete btn-medical-sm">
-                                            <i class="fas fa-times"></i> Cancel
-                                        </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <span class="text-muted small">—</span>
-                                }
+                                <div class="d-flex gap-1">
+                                    <a asp-action="Details" asp-route-id="@apt.Id" class="btn btn-medical btn-medical-details btn-medical-sm" title="Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@apt.Id" class="btn btn-medical btn-medical-edit btn-medical-sm" title="Reschedule">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@apt.Id" class="btn btn-medical btn-medical-delete btn-medical-sm" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }
