@@ -1,0 +1,107 @@
+@model List<Hospital.ViewModels.DoctorAvailabilityViewModel>
+
+@{
+    ViewData["Title"] = "Weekly Availability";
+}
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold text-primary">Weekly Availability</h1>
+            <p class="text-muted small mb-0">Set your recurring weekly shift hours (Mon-Fri, etc.)</p>
+        </div>
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-0" role="alert">
+                <i class="fas fa-check-circle me-1"></i> @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+        }
+    </div>
+
+    <form asp-action="Save" method="post">
+        <div class="table-medical shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex align-items-center">
+                <i class="fas fa-calendar-alt text-primary me-2"></i>
+                <h6 class="mb-0 fw-bold">Recurring Weekly Schedule</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th style="width: 200px;">Day of Week</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th style="width: 150px;">Slot (Mins)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Count; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="hidden" asp-for="@Model[i].DayOfWeek" />
+                                        <span class="fw-bold">@Model[i].DayOfWeek</span>
+                                    </td>
+                                    <td>
+                                        <input type="time" asp-for="@Model[i].StartTime" class="form-control form-control-sm border-0 bg-light" />
+                                    </td>
+                                    <td>
+                                        <input type="time" asp-for="@Model[i].EndTime" class="form-control form-control-sm border-0 bg-light" />
+                                    </td>
+                                    <td>
+                                        <select asp-for="@Model[i].SlotDuration" class="form-select form-select-sm border-0 bg-light">
+                                            <option value="15">15 mins</option>
+                                            <option value="30">30 mins</option>
+                                            <option value="45">45 mins</option>
+                                            <option value="60">60 mins</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        @{
+                                            bool isWorkingDay = Model[i].DayOfWeek != DayOfWeek.Saturday && Model[i].DayOfWeek != DayOfWeek.Sunday;
+                                        }
+                                        <span class="badge @(isWorkingDay ? "bg-success" : "bg-secondary") bg-opacity-10 @(isWorkingDay ? "text-success" : "text-secondary") px-3 py-2">
+                                            <i class="fas @(isWorkingDay ? "fa-briefcase" : "fa-home") me-1"></i> @(isWorkingDay ? "Working" : "Off")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top py-3 text-end">
+                <button type="submit" class="btn btn-medical btn-medical-details shadow-sm px-4">
+                    <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="modern-card border-start border-primary border-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-info-circle me-1"></i> Important Information</h6>
+                <ul class="text-muted small mb-0 ps-3">
+                    <li class="mb-2">Changes here will apply to <strong>all future weeks</strong>.</li>
+                    <li class="mb-2">If you have existing appointments, they will <strong>not</strong> be cancelled if you reduce your hours—please manage them manually.</li>
+                    <li>The default slot duration is <strong>30 minutes</strong>.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="modern-card bg-medical-light border-0">
+                <div class="d-flex align-items-center text-primary mb-2">
+                    <i class="fas fa-clock fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Real-time Booking</h6>
+                        <p class="text-muted small mb-0">Your available slots are updated instantly for patients.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

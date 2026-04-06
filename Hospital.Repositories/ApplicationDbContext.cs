@@ -1,4 +1,4 @@
-﻿using Hospital.Models;
+using Hospital.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,6 +17,7 @@ namespace Hospital.Repositories
         }
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
+        public DbSet<DoctorAvailability> DoctorAvailabilities { get; set; }
         public DbSet<Bill> Bills { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Department> Departments { get; set; }

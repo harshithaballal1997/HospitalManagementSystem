@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -50,10 +50,23 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="admin" asp-controller="Doctors" asp-action="Index">Doctors</a>
                             </li>
+                        }
+                        @if (User.IsInRole("Doctor"))
+                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="doctor" asp-controller="Labs" asp-action="Index">Clinical Dashboard</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="doctor" asp-controller="Availability" asp-action="Index">My Availability</a>
+                            </li>
                         }
+                        @if (User.IsInRole("Patient"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="patient" asp-controller="Booking" asp-action="Index">Book Appointment</a>
+                            </li>
+                        }
+
                     </ul>
                     <partial name="_LoginPartial"/>
                 </div>

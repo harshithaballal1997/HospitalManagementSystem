@@ -413,6 +413,25 @@ namespace Hospital.Utilities
 
             _context.Users.AddRange(newDoctors);
             _context.UserRoles.AddRange(userRoles);
+            
+            // Seed Default Availability for new doctors
+            var availabilities = new List<DoctorAvailability>();
+            foreach (var doc in newDoctors)
+            {
+                for (int day = 1; day <= 5; day++) // Monday to Friday
+                {
+                    availabilities.Add(new DoctorAvailability
+                    {
+                        DoctorId = doc.Id,
+                        DayOfWeek = (DayOfWeek)day,
+                        StartTime = new TimeSpan(10, 0, 0),
+                        EndTime = new TimeSpan(16, 0, 0),
+                        SlotDuration = 30
+                    });
+                }
+            }
+            _context.Set<DoctorAvailability>().AddRange(availabilities);
+
             _context.SaveChanges();
             _context.ChangeTracker.Clear();
         }
