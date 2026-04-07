@@ -7,6 +7,7 @@ using Hospital.Repositories.Implementation;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Hospital.Models;
 using Hospital.Services;
+using Hospital.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,7 +57,9 @@ builder.Services.AddTransient<ISafetyCheckerService, SafetyCheckerService>();
 builder.Services.AddTransient<IBedStatusHandler, BedStatusHandler>();
 builder.Services.AddTransient<IRoomAllocationService, RoomAllocationService>();
 builder.Services.AddTransient<IAIAllocationService, AIAllocationService>();
+builder.Services.AddTransient<IAIChatService, AIChatService>();
 builder.Services.AddRazorPages();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -82,6 +85,7 @@ DataSeeding();
 app.UseRouting();
 app.UseAuthorization();
 app.MapRazorPages();
+app.MapHub<ChatHub>("/chatHub");
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
