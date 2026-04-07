@@ -145,6 +145,21 @@
                     }
                 });
             });
+
+            $('#allocationForm').submit(function (e) {
+                var roomId = $('#roomSelect').val();
+                var patientId = $('#PatientId').val();
+
+                if (!roomId || !patientId) {
+                    e.preventDefault();
+                    alert("Please select a Patient and an available Room before submitting.");
+                    return;
+                }
+                
+                // Remove disabled prop so the values are sent in the POST request
+                $('#roomSelect').prop('disabled', false);
+                $('#bedSelect').prop('disabled', false);
+            });
         });
     </script>
 }

@@ -48,8 +48,27 @@ namespace Hospital.Web.Areas.Admin.Controllers
         [HttpPost]
         public IActionResult Allocate(RoomAllocationViewModel vm)
         {
-            _roomAllocationService.AllocateRoom(vm);
-            return RedirectToAction("Index");
+            if (vm.RoomId <= 0 || string.IsNullOrEmpty(vm.PatientId))
+            {
+                ModelState.AddModelError("", "Please select a Hospital, Patient, and a valid Room.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _roomAllocationService.AllocateRoom(vm);
+                    return RedirectToAction("Index");
+                }
+                catch (System.Exception ex)
+                {
+                    ModelState.AddModelError("", "An error occurred during allocation: " + ex.Message);
+                }
+            }
+
+            ViewBag.Hospitals = new SelectList(_hospitalService.GetAllHospitals(), "Id", "Name");
+            ViewBag.Patients = new SelectList(_userService.GetAllPatients(), "Id", "Name");
+            return View(vm);
         }
 
         [HttpGet]
