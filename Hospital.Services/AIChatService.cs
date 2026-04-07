@@ -28,7 +28,7 @@ namespace Hospital.Services
 
             if (user.IsInRole("Admin"))
             {
-                if (Regex.IsMatch(query, @"how many beds.*icu"))
+                if (query.Contains("icu") && query.Contains("bed"))
                 {
                     var icuRooms = _unitOfWork.GenericRepository<Room>()
                         .GetAll(filter: r => r.Type == "ICU")
@@ -42,20 +42,41 @@ namespace Hospital.Services
                         .Select(a => a.BedId.Value).ToList();
 
                     var available = allICUBeds.Count(b => !occupiedBeds.Contains(b.Id));
-                    return $"[Admin Eyes Only] There are currently {available} available beds in the ICU across all facilities.";
+                    return $"[Admin Eyes Only] There are currently {available} available beds in the ICU out of a total {allICUBeds.Count} ICU beds across all facilities.";
                 }
                 
-                if (Regex.IsMatch(query, @"occupied rooms.*city care"))
+                if (query.Contains("bed") && query.Contains("hospital"))
                 {
-                    var hospital = _unitOfWork.GenericRepository<HospitalInfo>()
-                        .GetAll(filter: h => h.Name.ToLower().Contains("city care")).FirstOrDefault();
-                    
-                    if (hospital == null) return "I could not find 'City Care Hospital' in the database.";
+                    // Trying to parse a specific hospital name out of the string if they gave one
+                    var hospitals = _unitOfWork.GenericRepository<HospitalInfo>().GetAll();
+                    HospitalInfo targetHospital = null;
+                    foreach(var h in hospitals)
+                    {
+                        if (query.Replace("hospital", "").Trim().Contains(h.Name.ToLower().Replace("hospital", "").Trim()))
+                        {
+                            targetHospital = h;
+                            break;
+                        }
+                    }
 
-                    var occupied = _unitOfWork.GenericRepository<RoomAllocation>()
-                        .GetAll(filter: a => a.HospitalId == hospital.Id && a.Status == AllocationStatus.Occupied).Count();
+                    if (targetHospital != null)
+                    {
+                        var occupied = _unitOfWork.GenericRepository<RoomAllocation>()
+                            .GetAll(filter: a => a.HospitalId == targetHospital.Id && a.Status == AllocationStatus.Occupied).Count();
+                        return $"[Admin Eyes Only] {targetHospital.Name} currently has {occupied} occupied rooms/beds.";
+                    }
                     
-                    return $"[Admin Eyes Only] City Care Hospital currently has {occupied} occupied rooms/allocations.";
+                    // If no explicit hospital, return generic bed context
+                    var allOccupied = _unitOfWork.GenericRepository<RoomAllocation>()
+                            .GetAll(filter: a => a.Status == AllocationStatus.Occupied).Count();
+                    return $"[Admin Eyes Only] Across all hospitals, there are {allOccupied} currently occupied beds/rooms.";
+                }
+
+                if (query.Contains("lab") || query.Contains("report") || query.Contains("patient"))
+                {
+                   // They want patient lab reports
+                   var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
+                   return $"[Admin Eyes Only] The system currently hosts {labCount} clinical lab reports across all patients. To query a specific patient's clinical summary as an Admin, please search their name in the patient's module. Data privacy regulations require explicit consent to pull specific lab details within the chat.";
                 }
 
                 if (Regex.IsMatch(query, @"status|deployment|health"))
@@ -63,13 +84,13 @@ namespace Hospital.Services
                     return "[Admin Eyes Only] System Health: All DB Connections to PostgreSQL are active. SignalR metrics: Normal. Render status: Healthy.";
                 }
                 
-                if (Regex.IsMatch(query, @"how many doctors"))
+                if (Regex.IsMatch(query, @"how many doctors|number of doctors|count of doctors"))
                 {
                     var count = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(x => x.IsDoctor).Count();
                     return $"[Admin Eyes Only] There are currently {count} doctors registered in the system.";
                 }
 
-                return "Admin Query: I did not understand that admin oversight command. Try asking about ICU beds, City Care hospital, or system health.";
+                return "Admin Query: I did not understand that command. Try asking about ICU beds, beds in a specific hospital, or patients clinical lab reports.";
             }
 
             if (user.IsInRole("Doctor"))
