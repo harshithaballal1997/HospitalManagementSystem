@@ -90,13 +90,15 @@ namespace Hospital.Services
                    return $"[Admin Eyes Only] The system currently hosts {labCount} clinical lab reports across all patients. To query a specific patient's clinical summary as an Admin, please search their name in the patient's module. Data privacy regulations require explicit consent to pull specific lab details within the chat.";
                 }
 
-                if (query.Contains("how many hospital") || query.Contains("number of hospital"))
+                if ((query.Contains("how many") || query.Contains("number of") || query.Contains("count of")) && 
+                    (query.Contains("hosp") || query.Contains("hopitla")))
                 {
                     var count = _unitOfWork.GenericRepository<HospitalInfo>().GetAll().Count();
                     return $"[Admin Eyes Only] There are currently {count} distinct hospital facilities fully integrated in the HMS system.";
                 }
 
-                if (query.Contains("how many room") || query.Contains("number of room"))
+                if ((query.Contains("how many") || query.Contains("number of") || query.Contains("count of")) && 
+                    (query.Contains("room") || query.Contains("rom")))
                 {
                     var count = _unitOfWork.GenericRepository<Room>().GetAll().Count();
                     return $"[Admin Eyes Only] We are currently tracking {count} total physical rooms across the entire hospital network.";
