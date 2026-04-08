@@ -26,6 +26,11 @@ namespace Hospital.Services
         {
             query = query.ToLowerInvariant();
 
+            if (query == "hello" || query == "hi" || query == "hey" || query == "greetings" || query == "help")
+            {
+                return "Hello! I am your secure digital assistant. How may I help you today?";
+            }
+
             if (user.IsInRole("Admin"))
             {
                 if (query.Contains("icu") && query.Contains("bed"))
