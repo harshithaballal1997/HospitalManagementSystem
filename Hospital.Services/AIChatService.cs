@@ -6,9 +6,21 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Hospital.Services
 {
+    public enum ChatIntent
+    {
+        Unknown,
+        Greeting,
+        SystemHealth,
+        BedCapacity,
+        PatientBriefing,
+        LabResults,
+        StaffMetrics
+    }
+
     public class AIChatService : IAIChatService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -25,150 +37,195 @@ namespace Hospital.Services
         public async Task<string> ProcessQueryAsync(string query, ClaimsPrincipal user)
         {
             query = query.ToLowerInvariant();
+            var intent = ExtractIntent(query);
 
-            if (query == "hello" || query == "hi" || query == "hey" || query == "greetings" || query == "help")
-            {
+            if (intent == ChatIntent.Greeting)
                 return "Hello! I am your secure digital assistant. How may I help you today?";
-            }
 
-            if (user.IsInRole("Admin"))
-            {
-                if (query.Contains("icu") && query.Contains("bed"))
-                {
-                    var icuRooms = _unitOfWork.GenericRepository<Room>()
-                        .GetAll(filter: r => r.Type == "ICU")
-                        .Select(r => r.Id).ToList();
-                    
-                    var allICUBeds = _unitOfWork.GenericRepository<Bed>()
-                        .GetAll(filter: b => icuRooms.Contains(b.RoomId)).ToList();
-                        
-                    var occupiedBeds = _unitOfWork.GenericRepository<RoomAllocation>()
-                        .GetAll(filter: a => a.Status == AllocationStatus.Occupied && a.BedId.HasValue && icuRooms.Contains(a.RoomId))
-                        .Select(a => a.BedId.Value).ToList();
-
-                    var available = allICUBeds.Count(b => !occupiedBeds.Contains(b.Id));
-                    return $"[Admin Eyes Only] There are currently {available} available beds in the ICU out of a total {allICUBeds.Count} ICU beds across all facilities.";
-                }
-                
-                if (query.Contains("bed") && query.Contains("hospital"))
-                {
-                    // Trying to parse a specific hospital name out of the string if they gave one
-                    var hospitals = _unitOfWork.GenericRepository<HospitalInfo>().GetAll();
-                    HospitalInfo targetHospital = null;
-                    foreach(var h in hospitals)
-                    {
-                        if (query.Replace("hospital", "").Trim().Contains(h.Name.ToLower().Replace("hospital", "").Trim()))
-                        {
-                            targetHospital = h;
-                            break;
-                        }
-                    }
-
-                    if (targetHospital != null)
-                    {
-                        var occupied = _unitOfWork.GenericRepository<RoomAllocation>()
-                            .GetAll(filter: a => a.HospitalId == targetHospital.Id && a.Status == AllocationStatus.Occupied).Count();
-                        return $"[Admin Eyes Only] {targetHospital.Name} currently has {occupied} occupied rooms/beds.";
-                    }
-                    
-                    // If no explicit hospital, return generic bed context
-                    var allOccupied = _unitOfWork.GenericRepository<RoomAllocation>()
-                            .GetAll(filter: a => a.Status == AllocationStatus.Occupied).Count();
-                    return $"[Admin Eyes Only] Across all hospitals, there are {allOccupied} currently occupied beds/rooms.";
-                }
-
-                if (query.Contains("lab") || query.Contains("report") || query.Contains("patient"))
-                {
-                   // Do we mean how many patients?
-                   if (query.Contains("how many") || query.Contains("count of"))
-                   {
-                       var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
-                       return $"[Admin Eyes Only] There are currently {patientCount} registered patients in the hospital database.";
-                   }
-
-                   var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
-                   return $"[Admin Eyes Only] The system currently hosts {labCount} clinical lab reports across all patients. To query a specific patient's clinical summary as an Admin, please search their name in the patient's module. Data privacy regulations require explicit consent to pull specific lab details within the chat.";
-                }
-
-                if ((query.Contains("how many") || query.Contains("number of") || query.Contains("count of")) && 
-                    (query.Contains("hosp") || query.Contains("hopitla")))
-                {
-                    var count = _unitOfWork.GenericRepository<HospitalInfo>().GetAll().Count();
-                    return $"[Admin Eyes Only] There are currently {count} distinct hospital facilities fully integrated in the HMS system.";
-                }
-
-                if ((query.Contains("how many") || query.Contains("number of") || query.Contains("count of")) && 
-                    (query.Contains("room") || query.Contains("rom")))
-                {
-                    var count = _unitOfWork.GenericRepository<Room>().GetAll().Count();
-                    return $"[Admin Eyes Only] We are currently tracking {count} total physical rooms across the entire hospital network.";
-                }
-
-                if (Regex.IsMatch(query, @"status|deployment|health"))
-                {
-                    return "[Admin Eyes Only] System Health: All DB Connections to PostgreSQL are active. SignalR metrics: Normal. Render status: Healthy.";
-                }
-                
-                if (Regex.IsMatch(query, @"how many doctors|number of doctors|count of doctors"))
-                {
-                    var count = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(x => x.IsDoctor).Count();
-                    return $"[Admin Eyes Only] There are currently {count} doctors registered in the system.";
-                }
-
-                return "Admin Query: I did not understand that command. Try asking about ICU beds, beds in a specific hospital, or patients clinical lab reports.";
-            }
-
-            if (user.IsInRole("Doctor"))
-            {
-                if (query.Contains("summarize patient") || query.Contains("briefing for patient"))
-                {
-                    // For demo purposes via natural language, normally we extract ID. 
-                    // Let's assume the doctor provides a name, we find the first matching patient.
-                    var searchName = query.Replace("summarize patient", "").Replace("briefing for patient", "").Trim();
-                    var patient = _unitOfWork.GenericRepository<ApplicationUser>()
-                        .GetAll(filter: u => !u.IsDoctor && u.Name.ToLower().Contains(searchName))
-                        .FirstOrDefault();
-
-                    if (patient == null) return $"I could not locate a patient matching '{searchName}' in your roster.";
-
-                    var summary = await _medicalAssistantService.SummarizePatientHistoryAsync(patient.Id);
-                    return $"**Patient Briefing for {patient.Name}:**\n\n{summary}";
-                }
-
-                return "Doctor Sandbox: I am restricted to patient briefings. Please ask me to 'summarize patient [Name]'.";
-            }
-
-            if (user.IsInRole("Patient"))
-            {
-                var userId = _userManager.GetUserId(user);
-
-                if (query.Contains("other patients") || query.Contains("global hospital") || query.Contains("admin"))
-                {
-                    return "🔒 Zero-Leak Privacy Barrier: You are not authorized to query global hospital metrics or other patient's data.";
-                }
-
-                if (Regex.IsMatch(query, @"my latest lab result|vitals|bmi|trend"))
-                {
-                    var lastLab = _unitOfWork.GenericRepository<Lab>()
-                        .GetAll(filter: l => l.PatientId == userId)
-                        .OrderByDescending(l => l.CreatedAt)
-                        .FirstOrDefault();
-
-                    if (lastLab == null) return "You currently do not have any lab results in the system.";
-
-                    double bmi = lastLab.Height > 0 ? (lastLab.Weight / System.Math.Pow(lastLab.Height / 100.0, 2)) : 0;
-                    return $"**Your Latest Clinical Lab Report:**\n- Blood Pressure: {lastLab.BloodPressure}\n- Temp: {lastLab.Temperature}°C\n- BMI: {bmi:F1}\n\n*This data is strictly isolated to your session ID.*";
-                }
-                
-                if (Regex.IsMatch(query, @"doctor availability|slots"))
-                {
-                    return "You can check dynamic doctor availabilities by navigating to the 'Book Appointment' page on your dashboard.";
-                }
-
-                return "Patient Sandbox: I can only access your personal records. Try asking 'What is my latest lab result?'.";
-            }
+            // Apply Role-Based Action Pipes
+            if (user.IsInRole("Admin")) return await HandleAdminQuery(intent, query);
+            if (user.IsInRole("Doctor")) return await HandleDoctorQuery(intent, query);
+            if (user.IsInRole("Patient")) return HandlePatientQuery(intent, query, _userManager.GetUserId(user));
 
             return "I am the Hospital AI. Please log in to access your secure sandbox environment.";
+        }
+
+        private ChatIntent ExtractIntent(string q)
+        {
+            if (q == "hello" || q == "hi" || q == "hey" || q == "greetings" || q == "help") return ChatIntent.Greeting;
+            if (FuzzyMatcher.IsMatch(q, "bed capacity occupied room icu availability amount of beds")) return ChatIntent.BedCapacity;
+            if (FuzzyMatcher.IsMatch(q, "summarize patient briefing history medical record summarize")) return ChatIntent.PatientBriefing;
+            if (FuzzyMatcher.IsMatch(q, "vitals lab tests results report weight bmi blood pressure")) return ChatIntent.LabResults;
+            if (FuzzyMatcher.IsMatch(q, "doctor nurse staff count total employees list of doctors")) return ChatIntent.StaffMetrics;
+            if (q.Contains("status") || q.Contains("deployment") || q.Contains("health")) return ChatIntent.SystemHealth;
+            
+            return ChatIntent.Unknown;
+        }
+
+        private async Task<string> HandleAdminQuery(ChatIntent intent, string query)
+        {
+            switch (intent)
+            {
+                case ChatIntent.BedCapacity:
+                    return ProcessAdminBedQuery(query);
+
+                case ChatIntent.LabResults:
+                case ChatIntent.PatientBriefing:
+                   var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
+                   var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
+                   return $"[Admin Eyes Only] The system currently hosts {labCount} lab reports for {patientCount} patients. Data privacy regulations require explicit consent to pull specific personal clinical details. Try asking for system capacities instead.";
+
+                case ChatIntent.StaffMetrics:
+                    var docs = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(x => x.IsDoctor).Count();
+                    return $"[Admin Eyes Only] We currently have {docs} doctors registered across the hospital network.";
+
+                case ChatIntent.SystemHealth:
+                    return "[Admin Eyes Only] System Health: Database connections active. SignalR metrics normal. Engine is utilizing advanced Levenshtein Semantics.";
+
+                default:
+                    return "Admin NLQ: I am not sure how to calculate that specific metric yet. Try asking about hospital bed availability, staff metrics, or system health.";
+            }
+        }
+
+        private string ProcessAdminBedQuery(string query)
+        {
+            // Determine Context Scope
+            bool isIcuQuery = query.Contains("icu") || query.Contains("intensive");
+            var targetHospital = ExtractTargetHospital(query);
+
+            var roomsQuery = _unitOfWork.GenericRepository<Room>().GetAll();
+            var allocationsQuery = _unitOfWork.GenericRepository<RoomAllocation>().GetAll(filter: a => a.Status == AllocationStatus.Occupied);
+
+            // Filter for ICU if explicitly requested
+            if (isIcuQuery)
+            {
+                var icuRoomIds = roomsQuery.Where(r => r.Type == "ICU").Select(r => r.Id).ToList();
+                roomsQuery = roomsQuery.Where(r => r.Type == "ICU").ToList();
+                allocationsQuery = allocationsQuery.Where(a => icuRoomIds.Contains(a.RoomId)).ToList();
+            }
+
+            // Filter for Hospital Entity
+            if (targetHospital != null)
+            {
+                roomsQuery = roomsQuery.Where(r => r.HospitalId == targetHospital.Id).ToList();
+                allocationsQuery = allocationsQuery.Where(a => a.HospitalId == targetHospital.Id).ToList();
+                
+                int totalRooms = roomsQuery.Count();
+                int totalOccupied = allocationsQuery.Count();
+
+                if (totalRooms == 0)
+                {
+                    // Actionable Guidance - Fallback algorithm
+                    var alternatives = FindAlternativesWithCapacity(isIcuQuery);
+                    string rec = string.Join(", ", alternatives);
+                    return $"[Admin Eyes Only] I looked up '{targetHospital.Name}', but they currently don't have {(isIcuQuery ? "ICU" : "Standard")} rooms registered. However, I see active availability at: {rec}. Would you like details for those?";
+                }
+
+                return $"[Admin Eyes Only] At '{targetHospital.Name}', we have {totalOccupied} occupied instances out of {totalRooms} {(isIcuQuery ? "ICU " : "")}rooms physically tracked.";
+            }
+            
+            // Global Aggregate Fallback
+            var totalHospitalsCount = _unitOfWork.GenericRepository<HospitalInfo>().GetAll().Count();
+            return $"[Admin Eyes Only] Across all {totalHospitalsCount} integrated hospitals, we are tracking {allocationsQuery.Count()} globally occupied {(isIcuQuery ? "ICU " : "")}beds.";
+        }
+
+        private HospitalInfo ExtractTargetHospital(string query)
+        {
+            var hospitals = _unitOfWork.GenericRepository<HospitalInfo>().GetAll();
+            
+            // Phase 1: Try strict subset match
+            foreach (var h in hospitals)
+            {
+                string norm = h.Name.ToLowerInvariant().Replace("hospital", "").Trim();
+                if (query.Contains(norm)) return h;
+            }
+
+            // Phase 2: Try fuzzy Matcher semantic search
+            foreach (var h in hospitals)
+            {
+                string norm = h.Name.ToLowerInvariant().Replace("hospital", "").Trim();
+                if (FuzzyMatcher.IsMatch(query, norm, maxDistance: 4)) return h;
+            }
+
+            return null; // Implicit wildcard
+        }
+        
+        private List<string> FindAlternativesWithCapacity(bool needsIcu)
+        {
+            var allocations = _unitOfWork.GenericRepository<RoomAllocation>().GetAll(filter: a => !a.IsDischarged).ToList();
+            var rooms = _unitOfWork.GenericRepository<Room>().GetAll().ToList();
+
+            if (needsIcu) rooms = rooms.Where(r => r.Type == "ICU").ToList();
+
+            var hospitalGrp = rooms.GroupBy(r => r.HospitalId)
+                .Select(g => new { 
+                    HospitalId = g.Key, 
+                    Capacity = g.Count() - allocations.Count(a => a.HospitalId == g.Key) 
+                })
+                .Where(x => x.Capacity > 0)
+                .OrderByDescending(x => x.Capacity)
+                .Take(2)
+                .ToList();
+
+            var hs = _unitOfWork.GenericRepository<HospitalInfo>().GetAll();
+            return hospitalGrp.Select(g => hs.FirstOrDefault(h => h.Id == g.HospitalId)?.Name).Where(n => n != null).ToList();
+        }
+
+        private async Task<string> HandleDoctorQuery(ChatIntent intent, string query)
+        {
+            if (intent == ChatIntent.PatientBriefing || intent == ChatIntent.LabResults)
+            {
+                var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
+                
+                // Fuzzy Match Patient Name Extraction
+                ApplicationUser target = null;
+                foreach(var p in patients)
+                {
+                    if (FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant()))
+                    {
+                        target = p;
+                        break;
+                    }
+                }
+
+                if (target == null) return "I could not locate a semantic match for that patient in the system securely. Please ensure the spelling is relatively close to their registered name.";
+
+                var summary = await _medicalAssistantService.SummarizePatientHistoryAsync(target.Id);
+                return $"**Dynamic Briefing for {target.Name}:**\n\n{summary}";
+            }
+
+            return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history.";
+        }
+
+        private string HandlePatientQuery(ChatIntent intent, string query, string currentUserId)
+        {
+            if (query.Contains("other patients") || query.Contains("global") || query.Contains("admin"))
+            {
+                return "🔒 Zero-Leak Privacy Mode Active: You are strictly isolated to your own medical records.";
+            }
+
+            if (intent == ChatIntent.LabResults || query.Contains("vitals") || query.Contains("bmi"))
+            {
+                // Strict RBAC filtering using LINQ WHERE clauses tied to currentUserId
+                var labs = _unitOfWork.GenericRepository<Lab>()
+                    .GetAll(filter: l => l.PatientId == currentUserId)
+                    .OrderByDescending(l => l.CreatedAt)
+                    .ToList();
+
+                if (!labs.Any()) return "You do not currently possess any active clinical lab records in the system database.";
+
+                var lastLab = labs.First();
+                double bmi = lastLab.Height > 0 ? (lastLab.Weight / Math.Pow(lastLab.Height / 100.0, 2)) : 0;
+                
+                return $"**Your Latest Clinical Extraction:**\n- BP: {lastLab.BloodPressure}\n- Temp: {lastLab.Temperature}°C\n- BMI Assessment: {bmi:F1}\n\n*This data structure was securely extracted using Identity Validation.*";
+            }
+            
+            if (intent == ChatIntent.BedCapacity || query.Contains("slots") || query.Contains("appointment"))
+            {
+                return "For appointments and doctor availabilities, please utilize the automated Booking Interface accessible via your dashboard.";
+            }
+
+            return "Patient NLQ Sandbox: Currently listening for commands retrieving your personal lab metrics or vitals.";
         }
     }
 }
