@@ -54,11 +54,15 @@
                                 <a class="nav-link text-dark" asp-area="admin" asp-controller="Appointments" asp-action="Index">Appointments</a>
                             </li>
                         }
-                        @if (User.IsInRole("Doctor"))
+                        @if (User.IsInRole("Doctor") || User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="doctor" asp-controller="Labs" asp-action="Index">Clinical Dashboard</a>
                             </li>
+                        }
+                        
+                        @if (User.IsInRole("Doctor"))
+                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="doctor" asp-controller="Availability" asp-action="Index">My Availability</a>
                             </li>
