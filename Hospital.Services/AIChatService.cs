@@ -15,6 +15,7 @@ namespace Hospital.Services
         Unknown,
         Greeting,
         SystemHealth,
+        PatientStatusLookup,
         BedCapacity,
         PatientBriefing,
         LabResults,
@@ -53,6 +54,7 @@ namespace Hospital.Services
         private ChatIntent ExtractIntent(string q)
         {
             if (q == "hello" || q == "hi" || q == "hey" || q == "greetings" || q == "help") return ChatIntent.Greeting;
+            if (q.Contains("is the patient") || q.Contains("where is") || q.Contains("admitted") || q.Contains("status of") || q.Contains("room allocated")) return ChatIntent.PatientStatusLookup;
             if (FuzzyMatcher.IsMatch(q, "bed capacity occupied room icu availability amount of beds")) return ChatIntent.BedCapacity;
             if (FuzzyMatcher.IsMatch(q, "summarize patient briefing history medical record summarize")) return ChatIntent.PatientBriefing;
             if (FuzzyMatcher.IsMatch(q, "vitals lab tests results report weight bmi blood pressure")) return ChatIntent.LabResults;
@@ -66,6 +68,10 @@ namespace Hospital.Services
         {
             switch (intent)
             {
+                case ChatIntent.PatientStatusLookup:
+                    var status = ProcessAdminPatientStatus(query);
+                    return status ?? "Admin NLQ: I recognized a patient status lookup, but could not cleanly match the name you provided to a registered patient in the database.";
+
                 case ChatIntent.BedCapacity:
                     return ProcessAdminBedQuery(query);
 
@@ -83,8 +89,50 @@ namespace Hospital.Services
                     return "[Admin Eyes Only] System Health: Database connections active. SignalR metrics normal. Engine is utilizing advanced Levenshtein Semantics.";
 
                 default:
-                    return "Admin NLQ: I am not sure how to calculate that specific metric yet. Try asking about hospital bed availability, staff metrics, or system health.";
+                    // Diagnostic Tool Fallback: If intent is completely unknown, try treating it as an entity name query for status before throwing an error.
+                    var diagnosticResult = ProcessAdminPatientStatus(query);
+                    if (diagnosticResult != null) return diagnosticResult;
+
+                    return "Admin NLQ: I did not find a matching Patient or Hospital entity for that query. Try asking about hospital capacities, staff metrics, or system health.";
             }
+        }
+
+        private string ProcessAdminPatientStatus(string query)
+        {
+            var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
+            
+            // Extract the closest matching patient via Semantic match
+            ApplicationUser targetUser = patients.FirstOrDefault(p => query.Contains(p.Name.ToLowerInvariant()));
+            if (targetUser == null)
+            {
+                foreach(var p in patients)
+                {
+                    if (FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant(), maxDistance: 2))
+                    {
+                        targetUser = p;
+                        break;
+                    }
+                }
+            }
+
+            if (targetUser == null) return null;
+
+            var allocation = _unitOfWork.GenericRepository<RoomAllocation>()
+                .GetAll(filter: a => a.PatientId == targetUser.Id && !a.IsDischarged)
+                .FirstOrDefault();
+
+            if (allocation == null)
+            {
+                return $"[Diagnostic Tool] {targetUser.Name} is registered in the system but is not currently admitted to any room.";
+            }
+
+            var hospital = _unitOfWork.GenericRepository<HospitalInfo>().GetById(allocation.HospitalId);
+            var room = _unitOfWork.GenericRepository<Room>().GetById(allocation.RoomId);
+            
+            string hName = hospital != null ? hospital.Name : "an unknown facility";
+            string rName = room != null ? room.RoomNumber : "an unassigned room";
+
+            return $"[Diagnostic Tool] Yes, {targetUser.Name} is currently admitted to Room {rName} at '{hName}'.";
         }
 
         private string ProcessAdminBedQuery(string query)
@@ -144,7 +192,7 @@ namespace Hospital.Services
             foreach (var h in hospitals)
             {
                 string norm = h.Name.ToLowerInvariant().Replace("hospital", "").Trim();
-                if (FuzzyMatcher.IsMatch(query, norm, maxDistance: 4)) return h;
+                if (FuzzyMatcher.IsMatch(query, norm, maxDistance: 2)) return h;
             }
 
             return null; // Implicit wildcard
