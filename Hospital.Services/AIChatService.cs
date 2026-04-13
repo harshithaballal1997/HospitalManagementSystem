@@ -77,9 +77,12 @@ namespace Hospital.Services
 
                 case ChatIntent.LabResults:
                 case ChatIntent.PatientBriefing:
-                   var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
-                   var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
-                   return $"[Admin Eyes Only] The system currently hosts {labCount} lab reports for {patientCount} patients. Data privacy regulations require explicit consent to pull specific personal clinical details. Try asking for system capacities instead.";
+                    var clinicalData = ProcessClinicalLookup(query, null, "Admin");
+                    if (clinicalData != null) return clinicalData;
+
+                    var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
+                    var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
+                    return $"[Admin Eyes Only] The system currently hosts {labCount} lab reports for {patientCount} patients. I couldn't find a specific patient match in your query. Try asking: 'What is the Blood Pressure for Patricia Martinez?'";
 
                 case ChatIntent.StaffMetrics:
                     var docs = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(x => x.IsDoctor).Count();
@@ -223,6 +226,10 @@ namespace Hospital.Services
         {
             if (intent == ChatIntent.PatientBriefing || intent == ChatIntent.LabResults)
             {
+                // Try clinical vital lookup first
+                var clinicalData = ProcessClinicalLookup(query, null, "Doctor");
+                if (clinicalData != null && !clinicalData.Contains("I recognized a vital")) return clinicalData;
+
                 var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
                 
                 // Fuzzy Match Patient Name Extraction
@@ -242,7 +249,7 @@ namespace Hospital.Services
                 return $"**Dynamic Briefing for {target.Name}:**\n\n{summary}";
             }
 
-            return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history.";
+            return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history or check a specific vital.";
         }
 
         private string HandlePatientQuery(ChatIntent intent, string query, string currentUserId)
@@ -254,7 +261,11 @@ namespace Hospital.Services
 
             if (intent == ChatIntent.LabResults || query.Contains("vitals") || query.Contains("bmi"))
             {
-                // Strict RBAC filtering using LINQ WHERE clauses tied to currentUserId
+                // Check if they are asking about someone else
+                var clinicalData = ProcessClinicalLookup(query, currentUserId, "Patient");
+                if (clinicalData != null) return clinicalData;
+
+                // Fallback to own records
                 var labs = _unitOfWork.GenericRepository<Lab>()
                     .GetAll(filter: l => l.PatientId == currentUserId)
                     .OrderByDescending(l => l.CreatedAt)
@@ -263,9 +274,9 @@ namespace Hospital.Services
                 if (!labs.Any()) return "You do not currently possess any active clinical lab records in the system database.";
 
                 var lastLab = labs.First();
-                double bmi = lastLab.Height > 0 ? (lastLab.Weight / Math.Pow(lastLab.Height / 100.0, 2)) : 0;
+                double bmiValue = lastLab.Height > 0 ? (lastLab.Weight / Math.Pow(lastLab.Height / 100.0, 2)) : 0;
                 
-                return $"**Your Latest Clinical Extraction:**\n- BP: {lastLab.BloodPressure}\n- Temp: {lastLab.Temperature}°C\n- BMI Assessment: {bmi:F1}\n\n*This data structure was securely extracted using Identity Validation.*";
+                return $"**Your Latest Clinical Extraction:**\n- BP: {lastLab.BloodPressure}\n- Temp: {lastLab.Temperature}°C\n- BMI Assessment: {bmiValue:F1}\n\n*This data structure was securely extracted using Identity Validation.*";
             }
             
             if (intent == ChatIntent.BedCapacity || query.Contains("slots") || query.Contains("appointment"))
@@ -274,6 +285,65 @@ namespace Hospital.Services
             }
 
             return "Patient NLQ Sandbox: Currently listening for commands retrieving your personal lab metrics or vitals.";
+        }
+
+        private string ProcessClinicalLookup(string query, string requesterId, string role)
+        {
+            var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
+            ApplicationUser targetUser = null;
+
+            // 1. Identify Target Patient
+            foreach (var p in patients)
+            {
+                if (query.Contains(p.Name.ToLowerInvariant()) || FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant(), maxDistance: 2))
+                {
+                    targetUser = p;
+                    break;
+                }
+            }
+
+            if (targetUser == null) return null;
+
+            // 2. Enforce Data Privacy (The "Zero-Leak" Rule)
+            if (role == "Patient" && targetUser.Id != requesterId)
+            {
+                return "🔒 Security Violation: I can only provide your personal health data. I am blocked from accessing records for other patients.";
+            }
+
+            // 3. Map Semantic Vitals
+            string searchedVital = "Lab Report";
+            bool isBP = query.Contains("blood pressure") || query.Contains("bp") || query.Contains("hypertension");
+            bool isTemp = query.Contains("temperature") || query.Contains("fever") || query.Contains("temp");
+            bool isWeight = query.Contains("weight") || query.Contains("bmi") || query.Contains("heaviness");
+
+            if (isBP) searchedVital = "Blood Pressure";
+            else if (isTemp) searchedVital = "Temperature";
+            else if (isWeight) searchedVital = "Weight/BMI";
+
+            // 4. Fetch Latest Lab Record
+            var latestLab = _unitOfWork.GenericRepository<Lab>()
+                .GetAll(filter: l => l.PatientId == targetUser.Id)
+                .OrderByDescending(l => l.CreatedAt)
+                .FirstOrDefault();
+
+            if (latestLab == null)
+            {
+                return $"I found a patient named {targetUser.Name}, but there are no recent {searchedVital} readings recorded in her lab history.";
+            }
+
+            // 5. Construct Verbose Response
+            string result = $"**Latest {searchedVital} for {targetUser.Name}:**\n";
+            if (isBP) result += $"- Reading: {latestLab.BloodPressure} mmHg\n- Status: Captured on {latestLab.CreatedAt:MMMM dd}";
+            else if (isTemp) result += $"- Value: {latestLab.Temperature}°C\n- Timestamp: {latestLab.CreatedAt:MMMM dd}";
+            else if (isWeight) {
+                double bmi = latestLab.Height > 0 ? (latestLab.Weight / Math.Pow(latestLab.Height / 100.0, 2)) : 0;
+                result += $"- Weight: {latestLab.Weight}kg\n- BMI: {bmi:F1}\n- Profile Date: {latestLab.CreatedAt:MMMM dd}";
+            }
+            else {
+                result += $"- BP: {latestLab.BloodPressure}\n- Temperature: {latestLab.Temperature}°C\n- Results: {latestLab.TestResults}";
+            }
+
+            return result;
         }
     }
 }
