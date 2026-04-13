@@ -57,7 +57,8 @@ namespace Hospital.Services
             if (q.Contains("is the patient") || q.Contains("where is") || q.Contains("admitted") || q.Contains("status of") || q.Contains("room allocated")) return ChatIntent.PatientStatusLookup;
             if (FuzzyMatcher.IsMatch(q, "bed capacity occupied room icu availability amount of beds")) return ChatIntent.BedCapacity;
             if (FuzzyMatcher.IsMatch(q, "summarize patient briefing history medical record summarize")) return ChatIntent.PatientBriefing;
-            if (FuzzyMatcher.IsMatch(q, "vitals lab tests results report weight bmi blood pressure")) return ChatIntent.LabResults;
+            if (FuzzyMatcher.IsMatch(q, "vitals bp lab tests results report weight bmi blood pressure hypertension")) return ChatIntent.LabResults;
+            if (q.Contains(" bp ") || q.EndsWith(" bp") || q.Contains("vitals")) return ChatIntent.LabResults;
             if (FuzzyMatcher.IsMatch(q, "doctor nurse staff count total employees list of doctors")) return ChatIntent.StaffMetrics;
             if (q.Contains("status") || q.Contains("deployment") || q.Contains("health")) return ChatIntent.SystemHealth;
             
@@ -77,8 +78,8 @@ namespace Hospital.Services
 
                 case ChatIntent.LabResults:
                 case ChatIntent.PatientBriefing:
-                    var clinicalData = ProcessClinicalLookup(query, null, "Admin");
-                    if (clinicalData != null) return clinicalData;
+                    var result = ProcessClinicalLookup(query, null, "Admin");
+                    if (result != null) return result;
 
                     var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
                     var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
@@ -92,9 +93,12 @@ namespace Hospital.Services
                     return "[Admin Eyes Only] System Health: Database connections active. SignalR metrics normal. Engine is utilizing advanced Levenshtein Semantics.";
 
                 default:
-                    // Diagnostic Tool Fallback: If intent is completely unknown, try treating it as an entity name query for status before throwing an error.
-                    var diagnosticResult = ProcessAdminPatientStatus(query);
-                    if (diagnosticResult != null) return diagnosticResult;
+                    // Diagnostic Tool Fallback: If intent is completely unknown, try treating it as an entity name query for status OR vitals before throwing an error.
+                    var admissionStatus = ProcessAdminPatientStatus(query);
+                    if (admissionStatus != null) return admissionStatus;
+
+                    var vitalScan = ProcessClinicalLookup(query, null, "Admin");
+                    if (vitalScan != null) return vitalScan;
 
                     return "Admin NLQ: I did not find a matching Patient or Hospital entity for that query. Try asking about hospital capacities, staff metrics, or system health.";
             }
