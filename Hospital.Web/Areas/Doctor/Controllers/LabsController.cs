@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace Hospital.Web.Areas.Doctor.Controllers
 {
     [Area("Doctor")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class LabsController : Controller
     {
         private readonly ILabService _labService;
