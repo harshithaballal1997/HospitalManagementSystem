@@ -27,12 +27,16 @@ namespace Hospital.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMedicalAssistantService _medicalAssistantService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IGeminiService _geminiService;
+        private readonly GeminiShield _geminiShield;
 
-        public AIChatService(IUnitOfWork unitOfWork, IMedicalAssistantService medicalAssistantService, UserManager<IdentityUser> userManager)
+        public AIChatService(IUnitOfWork unitOfWork, IMedicalAssistantService medicalAssistantService, UserManager<IdentityUser> userManager, IGeminiService geminiService, GeminiShield geminiShield)
         {
             _unitOfWork = unitOfWork;
             _medicalAssistantService = medicalAssistantService;
             _userManager = userManager;
+            _geminiService = geminiService;
+            _geminiShield = geminiShield;
         }
 
         public async Task<string> ProcessQueryAsync(string query, ClaimsPrincipal user)
@@ -249,8 +253,27 @@ namespace Hospital.Services
 
                 if (target == null) return "I could not locate a semantic match for that patient in the system securely. Please ensure the spelling is relatively close to their registered name.";
 
-                var summary = await _medicalAssistantService.SummarizePatientHistoryAsync(target.Id);
-                return $"**Dynamic Briefing for {target.Name}:**\n\n{summary}";
+                // Hybrid AI Approach:
+                // 1. Fetch raw data locally (Privacy First)
+                var rawHistory = await _medicalAssistantService.GetRawPatientHistoryAsync(target.Id);
+                
+                // 2. Prepare Anonymization Lists
+                var patientNames = patients.Select(p => p.Name).ToList();
+                var doctorNames = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(u => u.IsDoctor).Select(d => d.Name).ToList();
+
+                // 3. Scrub PII before sending to Gemini
+                string anonymizedPrompt = _geminiShield.Anonymize($"Summarize the following clinical history for a patient. Provide medical insights and concerns: {rawHistory}", patientNames, doctorNames);
+
+                // Verification Logging (Admin Visibility Only)
+                Console.WriteLine($"[GEMINI_SHIELD] Anonymized Prompt sent to Google: {anonymizedPrompt}");
+
+                // 4. Consult Gemini for high-level intelligence
+                string anonymizedResponse = await _geminiService.GenerateResponseAsync(anonymizedPrompt);
+
+                // 5. Restore PII for the local Doctor UI
+                string finalResponse = _geminiShield.DeAnonymize(anonymizedResponse);
+
+                return $"**Gemini-Enhanced Briefing for {target.Name}:**\n\n{finalResponse}\n\n*Security Note: All patient identifiers were scrubbed before consulting the cloud AI.*";
             }
 
             return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history or check a specific vital.";

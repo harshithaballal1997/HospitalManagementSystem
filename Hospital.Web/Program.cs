@@ -58,6 +58,8 @@ builder.Services.AddTransient<IBedStatusHandler, BedStatusHandler>();
 builder.Services.AddTransient<IRoomAllocationService, RoomAllocationService>();
 builder.Services.AddTransient<IAIAllocationService, AIAllocationService>();
 builder.Services.AddTransient<IAIChatService, AIChatService>();
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.AddTransient<GeminiShield>();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
