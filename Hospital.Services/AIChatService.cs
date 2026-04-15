@@ -41,18 +41,25 @@ namespace Hospital.Services
 
         public async Task<string> ProcessQueryAsync(string query, ClaimsPrincipal user)
         {
-            query = query.ToLowerInvariant();
-            var intent = ExtractIntent(query);
+            try 
+            {
+                query = query.ToLowerInvariant();
+                var intent = ExtractIntent(query);
 
-            if (intent == ChatIntent.Greeting)
-                return "Hello! I am your secure digital assistant. How may I help you today?";
+                if (intent == ChatIntent.Greeting)
+                    return "Hello! I am your secure digital assistant. How can I help you today?";
 
-            // Apply Role-Based Action Pipes
-            if (user.IsInRole("Admin")) return await HandleAdminQuery(intent, query);
-            if (user.IsInRole("Doctor")) return await HandleDoctorQuery(intent, query);
-            if (user.IsInRole("Patient")) return HandlePatientQuery(intent, query, _userManager.GetUserId(user));
+                // Apply Role-Based Action Pipes
+                if (user.IsInRole("Admin")) return await HandleAdminQuery(intent, query);
+                if (user.IsInRole("Doctor")) return await HandleDoctorQuery(intent, query);
+                if (user.IsInRole("Patient")) return HandlePatientQuery(intent, query, _userManager.GetUserId(user));
 
-            return "I am the Hospital AI. Please log in to access your secure sandbox environment.";
+                return "I am the Hospital AI. Please log in to access your secure sandbox environment.";
+            }
+            catch (Exception ex)
+            {
+                return $"AI Engine Error: Encountered an internal processing exception [{ex.GetType().Name}]. Please contact your system administrator.";
+            }
         }
 
         private ChatIntent ExtractIntent(string q)
@@ -81,13 +88,16 @@ namespace Hospital.Services
                     return ProcessAdminBedQuery(query);
 
                 case ChatIntent.LabResults:
-                case ChatIntent.PatientBriefing:
                     var result = ProcessClinicalLookup(query, null, "Admin");
                     if (result != null) return result;
 
                     var labCount = _unitOfWork.GenericRepository<Lab>().GetAll().Count();
                     var patientCount = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).Count();
                     return $"[Admin Eyes Only] The system currently hosts {labCount} lab reports for {patientCount} patients. I couldn't find a specific patient match in your query. Try asking: 'What is the Blood Pressure for Patricia Martinez?'";
+
+                case ChatIntent.PatientBriefing:
+                    // Reuse the refined Gemini Briefing logic for Admins
+                    return await HandleDoctorQuery(intent, query);
 
                 case ChatIntent.StaffMetrics:
                     var docs = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(x => x.IsDoctor).Count();
