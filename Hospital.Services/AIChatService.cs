@@ -234,15 +234,17 @@ namespace Hospital.Services
         {
             if (intent == ChatIntent.PatientBriefing || intent == ChatIntent.LabResults)
             {
-                // Try clinical vital lookup first
-                var clinicalData = ProcessClinicalLookup(query, null, "Doctor");
-                if (clinicalData != null && !clinicalData.Contains("I recognized a vital")) return clinicalData;
+                // 1. Decide Pipeline: Vitals Lookup (Local) vs. Briefing (Gemini)
+                if (intent == ChatIntent.LabResults)
+                {
+                    var clinicalData = ProcessClinicalLookup(query, null, "Doctor");
+                    if (clinicalData != null) return clinicalData;
+                }
 
-                var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
-                
-                // Fuzzy Match Patient Name Extraction
+                // 2. Fetch Patient Entity
+                var patientList = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
                 ApplicationUser target = null;
-                foreach(var p in patients)
+                foreach(var p in patientList)
                 {
                     if (FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant()))
                     {
@@ -253,27 +255,40 @@ namespace Hospital.Services
 
                 if (target == null) return "I could not locate a semantic match for that patient in the system securely. Please ensure the spelling is relatively close to their registered name.";
 
-                // Hybrid AI Approach:
-                // 1. Fetch raw data locally (Privacy First)
-                var rawHistory = await _medicalAssistantService.GetRawPatientHistoryAsync(target.Id);
-                
-                // 2. Prepare Anonymization Lists
-                var patientNames = patients.Select(p => p.Name).ToList();
-                var doctorNames = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(u => u.IsDoctor).Select(d => d.Name).ToList();
+                // 3. Fallback to Local Briefing if Gemini isn't needed or fails
+                if (intent == ChatIntent.PatientBriefing)
+                {
+                    try 
+                    {
+                        // Hybrid AI Approach:
+                        // 1. Fetch raw data locally (Privacy First)
+                        var rawHistory = await _medicalAssistantService.GetRawPatientHistoryAsync(target.Id);
+                        
+                        // 2. Prepare Anonymization Lists
+                        var patientNames = patientList.Select(p => p.Name).ToList();
+                        var doctorNames = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(u => u.IsDoctor).Select(d => d.Name).ToList();
 
-                // 3. Scrub PII before sending to Gemini
-                string anonymizedPrompt = _geminiShield.Anonymize($"Summarize the following clinical history for a patient. Provide medical insights and concerns: {rawHistory}", patientNames, doctorNames);
+                        // 3. Scrub PII before sending to Gemini
+                        string anonymizedPrompt = _geminiShield.Anonymize($"Summarize the following clinical history for a patient. Provide medical insights and concerns: {rawHistory}", patientNames, doctorNames);
 
-                // Verification Logging (Admin Visibility Only)
-                Console.WriteLine($"[GEMINI_SHIELD] Anonymized Prompt sent to Google: {anonymizedPrompt}");
+                        // Verification Logging
+                        Console.WriteLine($"[GEMINI_SHIELD] Anonymized Prompt sent to Google: {anonymizedPrompt}");
 
-                // 4. Consult Gemini for high-level intelligence
-                string anonymizedResponse = await _geminiService.GenerateResponseAsync(anonymizedPrompt);
+                        // 4. Consult Gemini for high-level intelligence
+                        string anonymizedResponse = await _geminiService.GenerateResponseAsync(anonymizedPrompt);
 
-                // 5. Restore PII for the local Doctor UI
-                string finalResponse = _geminiShield.DeAnonymize(anonymizedResponse);
+                        // 5. Restore PII for the local Doctor UI
+                        string finalResponse = _geminiShield.DeAnonymize(anonymizedResponse);
 
-                return $"**Gemini-Enhanced Briefing for {target.Name}:**\n\n{finalResponse}\n\n*Security Note: All patient identifiers were scrubbed before consulting the cloud AI.*";
+                        return $"**Gemini-Enhanced Briefing for {target.Name}:**\n\n{finalResponse}\n\n*Security Note: All patient identifiers were scrubbed before consulting the cloud AI.*";
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[GEMINI_ERROR] {ex.Message}");
+                        var localSummary = await _medicalAssistantService.SummarizePatientHistoryAsync(target.Id);
+                        return $"**Dynamic Briefing for {target.Name} (Local Engine):**\n\n{localSummary}\n\n*Note: Gemini was unavailable, so I utilized the local Hospital AI to generate this summary.*";
+                    }
+                }
             }
 
             return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history or check a specific vital.";
