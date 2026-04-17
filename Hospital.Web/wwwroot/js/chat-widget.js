@@ -50,13 +50,19 @@ document.addEventListener("DOMContentLoaded", function () {
         return console.error(err.toString());
     });
 
-    function showTyping() {
+    function showTyping(message = "") {
         if (isTyping) return;
         isTyping = true;
         const typingDiv = document.createElement("div");
         typingDiv.id = "aiTypingIndicator";
         typingDiv.className = "chat-msg bot-msg typing";
-        typingDiv.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+        
+        let loadingText = "";
+        if (message.toLowerCase().includes("summar") || message.toLowerCase().includes("history")) {
+            loadingText = "<i class='fas fa-microscope me-2'></i> Hospital AI is generating your clinical summary...";
+        }
+
+        typingDiv.innerHTML = `${loadingText}<div class="d-flex gap-1 ms-2"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
         chatMessages.appendChild(typingDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -67,8 +73,9 @@ document.addEventListener("DOMContentLoaded", function () {
             connection.invoke("SendMessage", message).catch(function (err) {
                 return console.error(err.toString());
             });
+            const lastMessage = message;
             chatInput.value = "";
-            showTyping();
+            showTyping(lastMessage);
         }
     }
 

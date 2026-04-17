@@ -279,7 +279,10 @@ namespace Hospital.Services
                         var doctorNames = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(u => u.IsDoctor).Select(d => d.Name).ToList();
 
                         // 3. Scrub PII before sending to Gemini
-                        string anonymizedPrompt = _geminiShield.Anonymize($"Summarize the following clinical history for a patient. Provide medical insights and concerns: {rawHistory}", patientNames, doctorNames);
+                        string anonymizedPrompt = _geminiShield.Anonymize(
+                            $"Return an Executive Briefing in strictly 3 sentences. " +
+                            $"Format: [Patient Name] has a history of [Status]. Latest vitals show [Vital Data]. Recent trends indicate [Improvement/Stability/Concerns]. " +
+                            $"Data to process: {rawHistory}", patientNames, doctorNames);
 
                         // Verification Logging
                         Console.WriteLine($"[GEMINI_SHIELD] Anonymized Prompt sent to Google: {anonymizedPrompt}");
@@ -316,8 +319,17 @@ namespace Hospital.Services
                 // Check if they are asking about someone else
                 var clinicalData = ProcessClinicalLookup(query, currentUserId, "Patient");
                 if (clinicalData != null) return clinicalData;
+            }
 
-                // Fallback to own records
+            if (intent == ChatIntent.PatientBriefing)
+            {
+                // Self-Service Briefing for Patients
+                return HandleDoctorQuery(intent, query).GetAwaiter().GetResult();
+            }
+
+            if (intent == ChatIntent.LabResults || query.Contains("vitals") || query.Contains("bmi"))
+            {
+                // Fallback to own records if not already handled by clinical lookup
                 var labs = _unitOfWork.GenericRepository<Lab>()
                     .GetAll(filter: l => l.PatientId == currentUserId)
                     .OrderByDescending(l => l.CreatedAt)

@@ -46,19 +46,20 @@ namespace Hospital.Services
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync($"{_baseUrl}?key={_apiKey}", content);
-            
-            if (!response.IsSuccessStatusCode)
+            using var cts = new System.Threading.CancellationTokenSource(System.TimeSpan.FromSeconds(15));
+            try
             {
-                var error = await response.Content.ReadAsStringAsync();
-                return $"Gemini API Error: {response.StatusCode} - {error}";
-            }
+                var response = await _httpClient.PostAsync($"{_baseUrl}?key={_apiKey}", content, cts.Token);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return $"Gemini API Error: {response.StatusCode} - {error}";
+                }
 
-            var resultJson = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(resultJson);
-            
-            try 
-            {
+                var resultJson = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(resultJson);
+                
                 return doc.RootElement
                     .GetProperty("candidates")[0]
                     .GetProperty("content")
@@ -66,7 +67,11 @@ namespace Hospital.Services
                     .GetProperty("text")
                     .GetString() ?? "Gemini returned an empty response.";
             }
-            catch 
+            catch (System.OperationCanceledException)
+            {
+                return "Gemini Error: The request timed out after 15 seconds. Please try again.";
+            }
+            catch (JsonException)
             {
                 return "Gemini Error: Failed to parse response structure.";
             }

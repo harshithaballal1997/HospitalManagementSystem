@@ -68,11 +68,13 @@ namespace Hospital.Services
             var reports = _unitOfWork.GenericRepository<PatientReport>()
                 .GetAll(filter: pr => pr.PatientId == patientId)
                 .OrderByDescending(pr => pr.Id)
+                .Take(5)
                 .ToList();
 
             var labs = _unitOfWork.GenericRepository<Lab>()
                 .GetAll(filter: l => l.PatientId == patientId)
                 .OrderByDescending(l => l.Id)
+                .Take(5)
                 .ToList();
 
             if (!reports.Any() && !labs.Any())
