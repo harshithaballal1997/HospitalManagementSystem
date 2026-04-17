@@ -18,7 +18,7 @@ namespace Hospital.Services
             string scrubbedText = text;
 
             // 1. Scrub Patient Names
-            foreach (var name in patientNames.OrderByDescending(n => n.Length))
+            foreach (var name in patientNames.Where(n => !string.IsNullOrEmpty(n)).OrderByDescending(n => n.Length))
             {
                 if (!string.IsNullOrWhiteSpace(name) && scrubbedText.Contains(name, System.StringComparison.OrdinalIgnoreCase))
                 {
@@ -32,7 +32,7 @@ namespace Hospital.Services
             }
 
             // 2. Scrub Doctor Names
-            foreach (var name in doctorNames.OrderByDescending(n => n.Length))
+            foreach (var name in doctorNames.Where(n => !string.IsNullOrEmpty(n)).OrderByDescending(n => n.Length))
             {
                 if (!string.IsNullOrWhiteSpace(name) && scrubbedText.Contains(name, System.StringComparison.OrdinalIgnoreCase))
                 {

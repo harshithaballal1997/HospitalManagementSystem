@@ -78,7 +78,7 @@ namespace Hospital.Services
                 .ToList();
 
             if (!reports.Any() && !labs.Any())
-                return "No medical history available on record.";
+                return "I found the patient, but there are no historical clinical records to summarize yet.";
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("[CLINICAL_RECORD_START]");

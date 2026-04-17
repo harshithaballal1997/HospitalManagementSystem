@@ -52,7 +52,7 @@ namespace Hospital.Services
                 // Apply Role-Based Action Pipes
                 if (user.IsInRole("Admin")) return await HandleAdminQuery(intent, query);
                 if (user.IsInRole("Doctor")) return await HandleDoctorQuery(intent, query);
-                if (user.IsInRole("Patient")) return HandlePatientQuery(intent, query, _userManager.GetUserId(user));
+                if (user.IsInRole("Patient")) return await HandlePatientQuery(intent, query, _userManager.GetUserId(user));
 
                 return "I am the Hospital AI. Please log in to access your secure sandbox environment.";
             }
@@ -123,12 +123,12 @@ namespace Hospital.Services
             var patients = _unitOfWork.GenericRepository<ApplicationUser>().GetAll(filter: u => !u.IsDoctor).ToList();
             
             // Extract the closest matching patient via Semantic match
-            ApplicationUser targetUser = patients.FirstOrDefault(p => query.Contains(p.Name.ToLowerInvariant()));
+            ApplicationUser targetUser = patients.FirstOrDefault(p => query.Contains((p.Name ?? "").ToLowerInvariant()));
             if (targetUser == null)
             {
                 foreach(var p in patients)
                 {
-                    if (FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant(), maxDistance: 2))
+                    if (FuzzyMatcher.IsMatch(query, (p.Name ?? "").ToLowerInvariant(), maxDistance: 2))
                     {
                         targetUser = p;
                         break;
@@ -205,14 +205,14 @@ namespace Hospital.Services
             // Phase 1: Try strict subset match
             foreach (var h in hospitals)
             {
-                string norm = h.Name.ToLowerInvariant().Replace("hospital", "").Trim();
+                string norm = (h.Name ?? "").ToLowerInvariant().Replace("hospital", "").Trim();
                 if (query.Contains(norm)) return h;
             }
 
             // Phase 2: Try fuzzy Matcher semantic search
             foreach (var h in hospitals)
             {
-                string norm = h.Name.ToLowerInvariant().Replace("hospital", "").Trim();
+                string norm = (h.Name ?? "").ToLowerInvariant().Replace("hospital", "").Trim();
                 if (FuzzyMatcher.IsMatch(query, norm, maxDistance: 2)) return h;
             }
 
@@ -256,7 +256,7 @@ namespace Hospital.Services
                 ApplicationUser target = null;
                 foreach(var p in patientList)
                 {
-                    if (FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant()))
+                    if (FuzzyMatcher.IsMatch(query, (p.Name ?? "").ToLowerInvariant()))
                     {
                         target = p;
                         break;
@@ -307,16 +307,16 @@ namespace Hospital.Services
             return "Doctor Sandbox: My operational scope is currently optimized for patient briefings. Try asking me to summarize a patient's medical history or check a specific vital.";
         }
 
-        private string HandlePatientQuery(ChatIntent intent, string query, string currentUserId)
+        private async Task<string> HandlePatientQuery(ChatIntent intent, string query, string currentUserId)
         {
             if (query.Contains("other patients") || query.Contains("global") || query.Contains("admin"))
             {
                 return "🔒 Zero-Leak Privacy Mode Active: You are strictly isolated to your own medical records.";
             }
 
+            // Check if they are scanning for another patient's vitals specifically
             if (intent == ChatIntent.LabResults || query.Contains("vitals") || query.Contains("bmi"))
             {
-                // Check if they are asking about someone else
                 var clinicalData = ProcessClinicalLookup(query, currentUserId, "Patient");
                 if (clinicalData != null) return clinicalData;
             }
@@ -324,7 +324,7 @@ namespace Hospital.Services
             if (intent == ChatIntent.PatientBriefing)
             {
                 // Self-Service Briefing for Patients
-                return HandleDoctorQuery(intent, query).GetAwaiter().GetResult();
+                return await HandleDoctorQuery(intent, query);
             }
 
             if (intent == ChatIntent.LabResults || query.Contains("vitals") || query.Contains("bmi"))
@@ -359,7 +359,8 @@ namespace Hospital.Services
             // 1. Identify Target Patient
             foreach (var p in patients)
             {
-                if (query.Contains(p.Name.ToLowerInvariant()) || FuzzyMatcher.IsMatch(query, p.Name.ToLowerInvariant(), maxDistance: 2))
+                string pName = (p.Name ?? "").ToLowerInvariant();
+                if (query.Contains(pName) || FuzzyMatcher.IsMatch(query, pName, maxDistance: 2))
                 {
                     targetUser = p;
                     break;
