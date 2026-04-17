@@ -290,7 +290,14 @@ namespace Hospital.Services
                         // 4. Consult Gemini for high-level intelligence
                         string anonymizedResponse = await _geminiService.GenerateResponseAsync(anonymizedPrompt);
 
-                        // 5. Restore PII for the local Doctor UI
+                        // 5. Detect API Errors and Fallback gracefully
+                        if (anonymizedResponse.StartsWith("Gemini Error") || anonymizedResponse.StartsWith("Gemini API Error"))
+                        {
+                            var fallbackSummary = await _medicalAssistantService.SummarizePatientHistoryAsync(target.Id);
+                            return $"**Dynamic Briefing for {target.Name} (Local Engine):**\n\nI am having trouble connecting to the AI engine, but according to the pulse of the database:\n\n{fallbackSummary}\n\n*Note: Gemini service encountered a connectivity issue ({anonymizedResponse.Split('-').Last().Trim()}). Local backup utilized.*";
+                        }
+
+                        // 6. Restore PII for the local Doctor UI
                         string finalResponse = _geminiShield.DeAnonymize(anonymizedResponse);
 
                         return $"**Gemini-Enhanced Briefing for {target.Name}:**\n\n{finalResponse}\n\n*Security Note: All patient identifiers were scrubbed before consulting the cloud AI.*";
@@ -299,7 +306,7 @@ namespace Hospital.Services
                     {
                         Console.WriteLine($"[GEMINI_ERROR] {ex.Message}");
                         var localSummary = await _medicalAssistantService.SummarizePatientHistoryAsync(target.Id);
-                        return $"**Dynamic Briefing for {target.Name} (Local Engine):**\n\n{localSummary}\n\n*Note: Gemini was unavailable, so I utilized the local Hospital AI to generate this summary.*";
+                        return $"**Dynamic Briefing for {target.Name} (Local Engine):**\n\nI encountered a technical glitch while connecting to the AI cloud. Here is the local summary:\n\n{localSummary}\n\n*Note: Local Hospital AI utilized for clinical continuity.*";
                     }
                 }
             }
